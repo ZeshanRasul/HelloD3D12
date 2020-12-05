@@ -42,7 +42,9 @@ void Graphics::Init(HWND hWnd)
 
 	// Create swap chain
 	CreateSwapChain(hWnd);
+
 	// Create render target view descriptor heap
+	CreateRTVDescriptorHeap();
 	// Create frame resources (RTV for each frame)
 	// Create a command allocator
 
@@ -187,4 +189,13 @@ void Graphics::CreateSwapChain(HWND hWnd)
 
 
 	ThrowIfFailed(pFactory2->CreateSwapChainForHwnd(pCommandQueue.Get(), hWnd, &scDesc, nullptr, nullptr, &pSwapChain));
+}
+
+void Graphics::CreateRTVDescriptorHeap()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC rtvDescHeapDesc = {};
+	rtvDescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvDescHeapDesc.NumDescriptors = 1;
+
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&rtvDescHeapDesc, __uuidof(ID3D12DescriptorHeap), &pRTVDescriptorHeap));
 }

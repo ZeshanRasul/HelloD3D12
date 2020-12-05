@@ -17,6 +17,7 @@ public:
 
 	void CreateSwapChain(HWND hWnd);
 	
+	void CreateRTVDescriptorHeap();
 public:
 	class DxException
 	{
@@ -42,6 +43,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Device> pDevice;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> pCommandQueue;
 	Microsoft::WRL::ComPtr<IDXGISwapChain1> pSwapChain;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pRTVDescriptorHeap;
 
 };
 
