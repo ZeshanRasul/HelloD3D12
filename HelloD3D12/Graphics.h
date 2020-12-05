@@ -7,7 +7,7 @@ public:
 	Graphics();
 	~Graphics();
 
-	void Init();
+	void Init(HWND hWnd);
 	void Shutdown();
 	void Render();
 
@@ -15,12 +15,35 @@ public:
 
 	void CreateCommandQueue();
 
+	void CreateSwapChain(HWND hWnd);
+	
+public:
+	class DxException
+	{
+	public:
+		DxException() = default;
+		DxException(HRESULT hr, const std::wstring& functionName, const std::wstring& filename, int lineNumber);
+
+		std::wstring ToString()const;
+
+		HRESULT ErrorCode = S_OK;
+		std::wstring FunctionName;
+		std::wstring Filename;
+		int LineNumber = -1;
+	};
+	
 private:
+	static const int SwapChainBufferCount = 2;
+
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> pAdapter;
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> pWarpAdapter;
 	Microsoft::WRL::ComPtr<IDXGIFactory1> pFactory;
 	Microsoft::WRL::ComPtr<ID3D12Debug> pDebugController;
 	Microsoft::WRL::ComPtr<ID3D12Device> pDevice;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> pCommandQueue;
+	Microsoft::WRL::ComPtr<IDXGISwapChain1> pSwapChain;
 
 };
+
+
+

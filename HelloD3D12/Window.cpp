@@ -75,7 +75,7 @@ void Window::Init(const WindowProps& props)
 	);
 
 	m_Graphics = new Graphics();
-	m_Graphics->Init();
+	m_Graphics->Init(m_Hwnd);
 
 	ShowWindow(m_Hwnd, SW_SHOWDEFAULT);
 

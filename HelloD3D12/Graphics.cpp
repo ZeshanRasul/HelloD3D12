@@ -9,7 +9,7 @@ Graphics::~Graphics()
 	Shutdown();
 }
 
-void Graphics::Init()
+void Graphics::Init(HWND hWnd)
 {
 	//////////////////////////////
 	// 1) INITIALIZE PIPELINE ////
@@ -41,6 +41,7 @@ void Graphics::Init()
 	CreateCommandQueue();
 
 	// Create swap chain
+	CreateSwapChain(hWnd);
 	// Create render target view descriptor heap
 	// Create frame resources (RTV for each frame)
 	// Create a command allocator
@@ -158,4 +159,32 @@ void Graphics::CreateCommandQueue()
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 
 	pDevice->CreateCommandQueue(&cqDesc, __uuidof(ID3D12CommandQueue), &pCommandQueue);
+}
+
+Graphics::DxException::DxException(HRESULT hr, const std::wstring& functionName, const std::wstring& filename, int lineNumber) :
+	ErrorCode(hr),
+	FunctionName(functionName),
+	Filename(filename),
+	LineNumber(lineNumber)
+{
+}
+
+void Graphics::CreateSwapChain(HWND hWnd)
+{
+	Microsoft::WRL::ComPtr<IDXGIFactory2> pFactory2;
+	pFactory->QueryInterface(IID_PPV_ARGS(&pFactory2));
+	DXGI_SWAP_CHAIN_DESC1 scDesc = {};
+	scDesc.Width = 1280;
+	scDesc.Height = 960;
+	scDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	scDesc.BufferCount = SwapChainBufferCount;
+	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	scDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	scDesc.SampleDesc.Count = 1;
+	
+	//DXGI_SWAP_CHAIN_FULLSCREEN_DESC scFSDesc = {};
+
+
+
+	ThrowIfFailed(pFactory2->CreateSwapChainForHwnd(pCommandQueue.Get(), hWnd, &scDesc, nullptr, nullptr, &pSwapChain));
 }
