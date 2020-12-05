@@ -17,13 +17,13 @@ void Graphics::Init(HWND hWnd)
 
 	// Create Factory 
 	CreateDXGIFactory1(_uuidof(pFactory), (void**)&pFactory);
-	
+
 	// Query hardware adapters
 	GetHardwareAdapter(pFactory, pAdapter);
 
 	// Enable debug layer
 
-	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(pDebugController.GetAddressOf(), &pDebugController))))
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pDebugController))))
 	{
 		pDebugController->EnableDebugLayer();
 	}
@@ -50,13 +50,22 @@ void Graphics::Init(HWND hWnd)
 	CreateFrameResources();
 
 	// Create a command allocator
-	pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), &pCommandAllocator);
-	
+	ThrowIfFailed(pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), &pCommandAllocator));
+
 	//////////////////////////////
 	// 2) INITIALIZE ASSETS///////
 	//////////////////////////////
 
 	// Create empty root signature
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc;
+	rootSigDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	Microsoft::WRL::ComPtr<ID3DBlob> signature;
+	Microsoft::WRL::ComPtr<ID3DBlob> error;
+
+	ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+	ThrowIfFailed(pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), __uuidof(ID3D12RootSignature), &pRootSignature));
+
 	// Compile shaders
 	// Create vertex input layout
 	// Create pipeline state object description
@@ -198,20 +207,24 @@ void Graphics::CreateSwapChain(HWND hWnd)
 void Graphics::CreateRTVDescriptorHeap()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvDescHeapDesc = {};
+	rtvDescHeapDesc.NumDescriptors = SwapChainBufferCount;
 	rtvDescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	rtvDescHeapDesc.NumDescriptors = 1;
+	rtvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
 	ThrowIfFailed(pDevice->CreateDescriptorHeap(&rtvDescHeapDesc, __uuidof(ID3D12DescriptorHeap), &pRTVDescriptorHeap));
+
+	pRTVDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
 }
 
 void Graphics::CreateFrameResources()
 {
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	for (UINT n = 0; n < SwapChainBufferCount; n++)
 	{
 		ThrowIfFailed(pSwapChain->GetBuffer(n, IID_PPV_ARGS(&pRenderTargets[n])));
 		pDevice->CreateRenderTargetView(pRenderTargets[n].Get(), nullptr, rtvHandle);
+		rtvHandle.Offset(1, pRTVDescriptorSize);
 	}
 }

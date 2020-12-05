@@ -38,6 +38,7 @@ public:
 	
 private:
 	static const int SwapChainBufferCount = 2;
+	UINT pRTVDescriptorSize;
 
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> pAdapter;
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> pWarpAdapter;
@@ -49,6 +50,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pRTVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> pRootSignature;
 
 
 };
