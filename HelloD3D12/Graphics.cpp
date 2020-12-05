@@ -45,7 +45,10 @@ void Graphics::Init(HWND hWnd)
 
 	// Create render target view descriptor heap
 	CreateRTVDescriptorHeap();
+
 	// Create frame resources (RTV for each frame)
+	CreateFrameResources();
+
 	// Create a command allocator
 
 	//////////////////////////////
@@ -198,4 +201,16 @@ void Graphics::CreateRTVDescriptorHeap()
 	rtvDescHeapDesc.NumDescriptors = 1;
 
 	ThrowIfFailed(pDevice->CreateDescriptorHeap(&rtvDescHeapDesc, __uuidof(ID3D12DescriptorHeap), &pRTVDescriptorHeap));
+
+}
+
+void Graphics::CreateFrameResources()
+{
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle = pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+	for (UINT n = 0; n < SwapChainBufferCount; n++)
+	{
+		ThrowIfFailed(pSwapChain->GetBuffer(n, IID_PPV_ARGS(&pRenderTargets[n])));
+		pDevice->CreateRenderTargetView(pRenderTargets[n].Get(), nullptr, rtvHandle);
+	}
 }

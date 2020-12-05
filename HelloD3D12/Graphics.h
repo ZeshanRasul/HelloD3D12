@@ -18,6 +18,9 @@ public:
 	void CreateSwapChain(HWND hWnd);
 	
 	void CreateRTVDescriptorHeap();
+
+	void CreateFrameResources();
+
 public:
 	class DxException
 	{
@@ -44,6 +47,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> pCommandQueue;
 	Microsoft::WRL::ComPtr<IDXGISwapChain1> pSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pRTVDescriptorHeap;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
+
 
 };
 
