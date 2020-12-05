@@ -62,7 +62,12 @@ void Graphics::Init(HWND hWnd)
 	// Compile shaders
 	CompileShaders();
 
-	// Create vertex input layout
+	// Create input element description to define vertex input layout
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
+	{
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"COLOUR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	};
 	// Create pipeline state object description
 	// Create pipeline state object
 	// Create command list
