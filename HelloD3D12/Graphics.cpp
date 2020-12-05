@@ -57,16 +57,11 @@ void Graphics::Init(HWND hWnd)
 	//////////////////////////////
 
 	// Create empty root signature
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc;
-	rootSigDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-
-	Microsoft::WRL::ComPtr<ID3DBlob> signature;
-	Microsoft::WRL::ComPtr<ID3DBlob> error;
-
-	ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
-	ThrowIfFailed(pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), __uuidof(ID3D12RootSignature), &pRootSignature));
+	CreateRootSignature();
 
 	// Compile shaders
+	CompileShaders();
+
 	// Create vertex input layout
 	// Create pipeline state object description
 	// Create pipeline state object
@@ -227,4 +222,29 @@ void Graphics::CreateFrameResources()
 		pDevice->CreateRenderTargetView(pRenderTargets[n].Get(), nullptr, rtvHandle);
 		rtvHandle.Offset(1, pRTVDescriptorSize);
 	}
+}
+
+void Graphics::CreateRootSignature()
+{
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc;
+	rootSigDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
+	Microsoft::WRL::ComPtr<ID3DBlob> signature;
+	Microsoft::WRL::ComPtr<ID3DBlob> error;
+
+	ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+	ThrowIfFailed(pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), __uuidof(ID3D12RootSignature), &pRootSignature));
+}
+
+void Graphics::CompileShaders()
+{
+#if defined(_DEBUG)
+	UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#else
+	UINT compileFlags = 0;
+#endif
+	Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob;
+	Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBlob;
+	ThrowIfFailed(D3DCompileFromFile(L"Shaders/VertexShader.hlsl", nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, &vertexShaderBlob, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(L"Shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, &pixelShaderBlob, nullptr));
 }

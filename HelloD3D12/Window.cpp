@@ -31,7 +31,7 @@ Window::WindowClass::~WindowClass()
 	UnregisterClass(wndClassName, GetInstance());
 }
 
-const wchar_t* Window::WindowClass::GetName()
+const LPCSTR Window::WindowClass::GetName()
 {
 	return wndClassName;
 }
@@ -64,7 +64,7 @@ void Window::Init(const WindowProps& props)
 	wr.bottom = m_Data.Height + wr.top;
 	AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU, FALSE);
 
-	const wchar_t* pWindowName = L"Windows Framework Window";
+	LPCSTR pWindowName = "Windows Framework Window";
 
 	HWND m_Hwnd = CreateWindowEx(
 		0, WindowClass::GetName(),

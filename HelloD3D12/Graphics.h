@@ -21,6 +21,10 @@ public:
 
 	void CreateFrameResources();
 
+	void CreateRootSignature();
+
+	void CompileShaders();
+
 public:
 	class DxException
 	{
