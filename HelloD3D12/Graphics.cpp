@@ -19,10 +19,23 @@ void Graphics::Init()
 	CreateDXGIFactory1(_uuidof(pFactory), (void**)&pFactory);
 	
 	// Query hardware adapters
-	GetHardwareAdapter(pFactory, ppAdapter);
+	GetHardwareAdapter(pFactory, pAdapter);
 
 	// Enable debug layer
+
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(pDebugController.GetAddressOf(), &pDebugController))))
+	{
+		pDebugController->EnableDebugLayer();
+	}
 	// Create the device
+	if (pAdapter == nullptr)
+	{
+		D3D12CreateDevice(pWarpAdapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), &pDevice);
+	}
+	else
+	{
+		D3D12CreateDevice(pAdapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), &pDevice);
+	}
 	// Create command queue
 	// Create swap chain
 	// Create render target view descriptor heap
@@ -82,7 +95,7 @@ void Graphics::Render()
 
 }
 
-void Graphics::GetHardwareAdapter(IDXGIFactory1* pFactory, Microsoft::WRL::ComPtr<IDXGIAdapter1> ppAdapter)
+void Graphics::GetHardwareAdapter(Microsoft::WRL::ComPtr<IDXGIFactory1> pFactory, Microsoft::WRL::ComPtr<IDXGIAdapter1> ppAdapter)
 {
 	ppAdapter = nullptr;
 	
