@@ -74,6 +74,9 @@ void Window::Init(const WindowProps& props)
 		nullptr, nullptr, WindowClass::GetInstance(), this
 	);
 
+	m_Graphics = new Graphics();
+	m_Graphics->Init();
+
 	ShowWindow(m_Hwnd, SW_SHOWDEFAULT);
 
 	SetVSync(true);

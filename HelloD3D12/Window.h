@@ -3,6 +3,7 @@
 #include <optional>
 #include "Events/Event.h"
 #include "Input.h"
+#include "Graphics.h"
 
 struct WindowProps
 {
@@ -83,5 +84,7 @@ private:
 	WindowData m_Data;
 
 	HWND m_Hwnd;
+
+	Graphics* m_Graphics;
 
 };
