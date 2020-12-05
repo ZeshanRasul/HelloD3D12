@@ -62,14 +62,13 @@ void Graphics::Init(HWND hWnd)
 	// Compile shaders
 	CompileShaders();
 
-	// Create input element description to define vertex input layout
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
-	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOUR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
-	};
-	// Create pipeline state object description
-	// Create pipeline state object
+	
+	
+	// Create input element description to define vertex input layout and
+	// Create pipeline state object description and object
+	CreatePipelineState();
+
+
 	// Create command list
 	// Close command list
 	// Create and load vertex buffers
@@ -248,8 +247,32 @@ void Graphics::CompileShaders()
 #else
 	UINT compileFlags = 0;
 #endif
-	Microsoft::WRL::ComPtr<ID3DBlob> vertexShaderBlob;
-	Microsoft::WRL::ComPtr<ID3DBlob> pixelShaderBlob;
-	ThrowIfFailed(D3DCompileFromFile(L"Shaders/VertexShader.hlsl", nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, &vertexShaderBlob, nullptr));
-	ThrowIfFailed(D3DCompileFromFile(L"Shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, &pixelShaderBlob, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(L"Shaders/VertexShader.hlsl", nullptr, nullptr, "main", "vs_5_0", compileFlags, 0, &pVertexShaderBlob, nullptr));
+	ThrowIfFailed(D3DCompileFromFile(L"Shaders/PixelShader.hlsl", nullptr, nullptr, "main", "ps_5_0", compileFlags, 0, &pPixelShaderBlob, nullptr));
+}
+
+void Graphics::CreatePipelineState()
+{
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
+	{
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"COLOUR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+	};
+	
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+	psoDesc.pRootSignature = pRootSignature.Get();
+	psoDesc.VS = {reinterpret_cast<UINT8*>(pVertexShaderBlob->GetBufferPointer()), pVertexShaderBlob->GetBufferSize()};
+	psoDesc.PS = {reinterpret_cast<UINT8*>(pPixelShaderBlob->GetBufferPointer()), pPixelShaderBlob->GetBufferSize()};
+	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
+	psoDesc.SampleMask = UINT_MAX;
+	psoDesc.NumRenderTargets = 1;
+	psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	psoDesc.SampleDesc.Count = 1;
+
+	ThrowIfFailed(pDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pPipelineState)));
+
 }
