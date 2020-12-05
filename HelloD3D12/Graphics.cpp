@@ -36,7 +36,10 @@ void Graphics::Init()
 	{
 		D3D12CreateDevice(pAdapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), &pDevice);
 	}
+
 	// Create command queue
+	CreateCommandQueue();
+
 	// Create swap chain
 	// Create render target view descriptor heap
 	// Create frame resources (RTV for each frame)
@@ -146,4 +149,13 @@ void Graphics::GetHardwareAdapter(Microsoft::WRL::ComPtr<IDXGIFactory1> pFactory
 	{
 		factory6->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter));	
 	}
+}
+
+void Graphics::CreateCommandQueue()
+{
+	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
+	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+
+	pDevice->CreateCommandQueue(&cqDesc, __uuidof(ID3D12CommandQueue), &pCommandQueue);
 }
