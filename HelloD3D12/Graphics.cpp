@@ -50,7 +50,8 @@ void Graphics::Init(HWND hWnd)
 	CreateFrameResources();
 
 	// Create a command allocator
-
+	pDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), &pCommandAllocator);
+	
 	//////////////////////////////
 	// 2) INITIALIZE ASSETS///////
 	//////////////////////////////

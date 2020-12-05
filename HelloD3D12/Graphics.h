@@ -48,6 +48,7 @@ private:
 	Microsoft::WRL::ComPtr<IDXGISwapChain1> pSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pRTVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
+	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
 
 
 };
