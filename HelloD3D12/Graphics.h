@@ -33,6 +33,9 @@ public:
 
 	void CreateVertexBuffer();
 
+	void CreateFence();
+
+
 public:
 	class DxException
 	{
@@ -68,8 +71,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipelineState;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pCommandList;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pVertexBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Fence> pFence;
 
 	D3D12_VERTEX_BUFFER_VIEW pVertexBufferView;
+	UINT64 pFenceValue;
 };
 
 

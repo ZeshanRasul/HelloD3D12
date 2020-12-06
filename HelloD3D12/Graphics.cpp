@@ -80,6 +80,8 @@ void Graphics::Init(HWND hWnd)
 	CreateVertexBuffer();
 
 	// Create fence
+	CreateFence();
+
 	// Create event handle
 	// Wait for GPU to complete (check on fence)
 }
@@ -324,5 +326,10 @@ void Graphics::CreateVertexBuffer()
 	pVertexBufferView.BufferLocation = pVertexBuffer->GetGPUVirtualAddress();
 	pVertexBufferView.SizeInBytes = sizeof(Vertex);
 	pVertexBufferView.StrideInBytes = vertexBufferSize;
+}
 
+void Graphics::CreateFence()
+{
+	ThrowIfFailed(pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence)));
+	pFenceValue = 1;
 }
