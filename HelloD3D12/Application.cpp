@@ -36,6 +36,7 @@ int Application::Run()
 			return *ecode;
 		}
 		Graphics& graphics = m_Window->GetGraphics();
+		graphics.Update();
 		graphics.Render();
 	}
 

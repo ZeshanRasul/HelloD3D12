@@ -82,6 +82,8 @@ void Graphics::Init(HWND hWnd)
 	// and Create vertex buffer views
 	CreateVertexBuffer();
 
+	CreateConstantBuffer();
+
 	// Create fence 	
 	// and Create event handle
 	CreateFence();
@@ -96,6 +98,35 @@ void Graphics::Shutdown()
 	WaitForPreviousFrame();
 	// Close event handle
 	CloseHandle(pFenceEvent);
+}
+
+void Graphics::Update()
+{
+	struct ConstantBuffer
+	{
+		DirectX::XMFLOAT4X4 transform;
+	};
+
+	ConstantBuffer cb;
+	/*
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(1, 1, 1, 1.0f);
+	DirectX::XMVECTOR target = DirectX::XMVectorZero();
+	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
+	DirectX::XMMATRIX world = DirectX::XMMatrixIdentity();
+	DirectX::XMMATRIX proj = DirectX::XMMatrixIdentity();
+
+	DirectX::XMMATRIX worldViewProj = world * view * proj;
+	*/
+	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f)));
+
+	UINT8* pConstantDataBegin;
+	CD3DX12_RANGE readRange(0, 0);
+	ThrowIfFailed(pConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pConstantDataBegin)));
+	memcpy(pConstantDataBegin, &cb, CalcConstantBufferByteSize(sizeof(ConstantBuffer)));
+	pConstantBuffer->Unmap(0, nullptr);
+
 }
 
 void Graphics::Render()
@@ -256,8 +287,24 @@ void Graphics::CreateFrameResources()
 
 void Graphics::CreateRootSignature()
 {
+	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[1];
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorTableRanges[0].NumDescriptors = 1;
+	descriptorTableRanges[0].BaseShaderRegister = 0;
+	descriptorTableRanges[0].RegisterSpace = 0;
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges);
+	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
+
+	D3D12_ROOT_PARAMETER rootParameters[1];
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[0].DescriptorTable = descriptorTable;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc;
-	rootSigDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	rootSigDesc.Init(_countof(rootParameters), rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Microsoft::WRL::ComPtr<ID3DBlob> signature;
 	Microsoft::WRL::ComPtr<ID3DBlob> error;
@@ -425,6 +472,60 @@ void Graphics::CreateVertexBuffer()
 	pIndexBufferView.Format = DXGI_FORMAT_R16_UINT;
 }
 
+void Graphics::CreateConstantBuffer()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC constantBufferHeapDesc = {};
+	constantBufferHeapDesc.NumDescriptors = 1;
+	constantBufferHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	constantBufferHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&constantBufferHeapDesc, __uuidof(ID3D12DescriptorHeap), &pConstantBufferDescriptorHeap));
+
+	struct ConstantBuffer
+	{
+		DirectX::XMFLOAT4X4 x;
+	//	float transform;
+	};
+
+	ConstantBuffer cb;
+//	cb.transform = 2;
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(1, 1, 1, 1.0f);
+	DirectX::XMVECTOR target = DirectX::XMVectorZero();
+	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+
+	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
+	DirectX::XMMATRIX world = DirectX::XMMatrixIdentity();
+	DirectX::XMMATRIX proj = DirectX::XMMatrixIdentity();
+
+	DirectX::XMMATRIX worldViewProj = world * view * proj;
+	DirectX::XMStoreFloat4x4(&cb.x, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationX(0.45f)));
+	
+
+	UINT constantBufferByteSize = CalcConstantBufferByteSize(sizeof(ConstantBuffer));
+
+	ThrowIfFailed(pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(constantBufferByteSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+		__uuidof(ID3D12Resource), &pConstantBuffer
+	));
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC constantBufferViewDesc = {};
+	constantBufferViewDesc.BufferLocation = pConstantBuffer->GetGPUVirtualAddress();
+	constantBufferViewDesc.SizeInBytes = constantBufferByteSize;
+
+	pDevice->CreateConstantBufferView(&constantBufferViewDesc, pConstantBufferDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	ZeroMemory(&cb, sizeof(ConstantBuffer));
+
+	UINT8* pConstantDataBegin;
+	CD3DX12_RANGE readRange(0, 0);
+	ThrowIfFailed(pConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pConstantDataBegin)));
+	memcpy(pConstantDataBegin, &cb, constantBufferByteSize);
+	pConstantBuffer->Unmap(0, nullptr);
+
+}
+
 void Graphics::CreateFence()
 {
 	ThrowIfFailed(pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence)));
@@ -465,6 +566,11 @@ void Graphics::PopulateCommandList()
 	// Set graphics root signature
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
 	
+	ID3D12DescriptorHeap* descriptorHeaps[] = { pConstantBufferDescriptorHeap.Get() };
+	pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+
+	pCommandList->SetGraphicsRootDescriptorTable(0, pConstantBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
 	// Set viewport and scissor rectangles
 	pVP.Width = 1280;
 	pVP.Height = 960;
@@ -503,4 +609,22 @@ void Graphics::PopulateCommandList()
 
 	// Close command list
 	CloseCommandList();
+}
+
+
+
+UINT Graphics::CalcConstantBufferByteSize(UINT byteSize)
+{
+	// Constant buffers must be a multiple of the minimum hardware
+	// allocation size (usually 256 bytes).  So round up to nearest
+	// multiple of 256.  We do this by adding 255 and then masking off
+	// the lower 2 bytes which store all bits < 256.
+	// Example: Suppose byteSize = 300.
+	// (300 + 255) & ~255
+	// 555 & ~255
+	// 0x022B & ~0x00ff
+	// 0x022B & 0xff00
+	// 0x0200
+	// 512
+	return (byteSize + 255) & ~255;
 }
