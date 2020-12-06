@@ -75,6 +75,8 @@ void Graphics::Init(HWND hWnd)
 	CloseCommandList();
 
 	// Create and load vertex buffers
+	CreateVertexBuffer();
+
 	// Create vertex buffer views
 	// Create fence
 	// Create event handle
@@ -287,4 +289,28 @@ void Graphics::CreateCommandList()
 void Graphics::CloseCommandList()
 {
 	ThrowIfFailed(pCommandList->Close());
+}
+
+void Graphics::CreateVertexBuffer()
+{
+	struct Vertex
+	{
+		DirectX::XMFLOAT2 position;
+		DirectX::XMFLOAT4 colour;
+	};
+
+	Vertex vertices[] =
+	{
+		{{0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+		{{-0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+		{{0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}
+	};
+
+	const UINT vertexBufferSize = sizeof(vertices);
+
+	ThrowIfFailed(pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+		D3D12_RESOURCE_STATE_COMMON, nullptr,
+		__uuidof(ID3D12Resource), &pVertexBuffer));
 }
