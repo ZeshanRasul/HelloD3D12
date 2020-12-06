@@ -46,6 +46,8 @@ public:
 
 	UINT CalcConstantBufferByteSize(UINT byteSize);
 
+	void OnMouseMove(WPARAM buttonState, int x, int y);
+
 
 public:
 	class DxException
@@ -99,6 +101,12 @@ private:
 	UINT64 pFenceValue;
 	HANDLE pFenceEvent;
 	UINT pFrameIndex;
+
+	float pTheta = 1.5f * DirectX::XM_PI;
+	float pPhi = DirectX::XM_PIDIV4;
+	float pRadius = 1.0f;
+
+	POINT pLastMousePos;
 };
 
 

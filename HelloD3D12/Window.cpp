@@ -233,6 +233,7 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		const POINTS pt = MAKEPOINTS(lParam);
 
+
 		if (pt.x >= 0 && pt.x <= (int)m_Data.Width && pt.y >= 0 && pt.y <= (int)m_Data.Height)
 		{
 			input.OnMouseMove(pt.x, pt.y);
@@ -273,6 +274,14 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 				input.OnMouseLeave();
 			}
 		}
+		break;
+	}
+
+	case WM_MOUSEMOVE:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+
+		m_Graphics->OnMouseMove(wParam, pt.x, pt.y);
 		break;
 	}
 

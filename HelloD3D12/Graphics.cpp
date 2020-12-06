@@ -1,4 +1,5 @@
 #include "Graphics.h"
+#include <algorithm>
 
 Graphics::Graphics()
 	:
@@ -108,8 +109,12 @@ void Graphics::Update()
 	};
 
 	ConstantBuffer cb;
-	/*
-	DirectX::XMVECTOR pos = DirectX::XMVectorSet(1, 1, 1, 1.0f);
+	
+	float x = pRadius * sinf(pPhi) * cosf(pTheta);
+	float z = pRadius * sinf(pPhi) * sinf(pTheta);
+	float y = pRadius * cosf(pPhi);
+
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(x, y, z, 1.0f);
 	DirectX::XMVECTOR target = DirectX::XMVectorZero();
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -118,8 +123,8 @@ void Graphics::Update()
 	DirectX::XMMATRIX proj = DirectX::XMMatrixIdentity();
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
-	*/
-	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixScaling(2.0f, 2.0f, 2.0f)));
+	
+	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(worldViewProj));
 
 	UINT8* pConstantDataBegin;
 	CD3DX12_RANGE readRange(0, 0);
@@ -395,17 +400,17 @@ void Graphics::CreateVertexBuffer()
 
 	Vertex vertices[] =
 	{
-		{{DirectX::XMFLOAT3(-0.33f, -0.33f, -0.33f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(-0.33f, +0.33f, -0.33f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(+0.33f, +0.33f, -0.33f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(+0.33f, -0.33f, -0.33f)}, {DirectX::XMFLOAT4(0.33f, 0.33f, 0.33f, 1.0f)}},
-		{{DirectX::XMFLOAT3(-0.33f, -0.33f, +0.33f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(-0.33f, +0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(+0.33f, +0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(+0.33f, -0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.33f, 0.33f, 0.33f, 1.0f)}}
+		{{DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f)}, {DirectX::XMFLOAT4(0.33f, 0.33f, 0.33f, 1.0f)}},
+		{{DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f)}, {DirectX::XMFLOAT4(0.33f, 0.33f, 0.33f, 1.0f)}}
 	};
 
-	std::uint16_t indices[] =
+	uint16_t indices[] =
 	{
 		// Front face
 		0, 1, 2,
@@ -453,7 +458,7 @@ void Graphics::CreateVertexBuffer()
 	pVertexBufferView.SizeInBytes = vertexBufferSize;
 	pVertexBufferView.StrideInBytes = sizeof(Vertex);
 
-	const UINT indexBufferSize = sizeof(vertices);
+	const UINT indexBufferSize = sizeof(indices);
 
 	ThrowIfFailed(pDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
@@ -484,12 +489,15 @@ void Graphics::CreateConstantBuffer()
 	struct ConstantBuffer
 	{
 		DirectX::XMFLOAT4X4 x;
-	//	float transform;
 	};
 
 	ConstantBuffer cb;
-//	cb.transform = 2;
-	DirectX::XMVECTOR pos = DirectX::XMVectorSet(1, 1, 1, 1.0f);
+
+	float x = pRadius * sinf(pPhi) * cosf(pTheta);
+	float z = pRadius * sinf(pPhi) * sinf(pTheta);
+	float y = pRadius * cosf(pPhi);
+
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(x, y, z, 1.0f);
 	DirectX::XMVECTOR target = DirectX::XMVectorZero();
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -498,7 +506,7 @@ void Graphics::CreateConstantBuffer()
 	DirectX::XMMATRIX proj = DirectX::XMMatrixIdentity();
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
-	DirectX::XMStoreFloat4x4(&cb.x, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationX(0.45f)));
+	DirectX::XMStoreFloat4x4(&cb.x, DirectX::XMMatrixTranspose(worldViewProj));
 	
 
 	UINT constantBufferByteSize = CalcConstantBufferByteSize(sizeof(ConstantBuffer));
@@ -627,4 +635,30 @@ UINT Graphics::CalcConstantBufferByteSize(UINT byteSize)
 	// 0x0200
 	// 512
 	return (byteSize + 255) & ~255;
+}
+
+void Graphics::OnMouseMove(WPARAM buttonState, int x, int y)
+{
+	if ((buttonState & MK_LBUTTON) != 0)
+	{
+		float dx = DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - pLastMousePos.x));
+		float dy = DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - pLastMousePos.y));
+
+		pTheta += dx;
+		pPhi += dy;
+
+		pPhi = std::clamp(pPhi, 0.1f, DirectX::XM_PI - 0.1f);
+	}
+	else if ((buttonState & MK_RBUTTON) != 0)
+	{
+		float dx = 0.005f * static_cast<float>(x - pLastMousePos.x);
+		float dy = 0.005f * static_cast<float>(y - pLastMousePos.y);
+
+		pRadius += dx - dy;
+
+		pRadius = std::clamp(pRadius, 1.0f, 15.0f);
+	}
+
+	pLastMousePos.x = x;
+	pLastMousePos.y = y;
 }
