@@ -37,6 +37,9 @@ public:
 
 	void WaitForPreviousFrame();
 
+	void PopulateCommandList();
+
+
 
 public:
 	class DxException
@@ -65,6 +68,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> pCommandQueue;
 	Microsoft::WRL::ComPtr<IDXGISwapChain3> pSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pRTVDescriptorHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pDSVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> pRootSignature;
@@ -74,6 +78,10 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pCommandList;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pVertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Fence> pFence;
+
+	D3D12_VIEWPORT pVP;
+
+	D3D12_RECT pScissorRect;
 
 	D3D12_VERTEX_BUFFER_VIEW pVertexBufferView;
 	UINT64 pFenceValue;

@@ -45,7 +45,7 @@ void Graphics::Init(HWND hWnd)
 	// Create swap chain
 	CreateSwapChain(hWnd);
 
-	// Create render target view descriptor heap
+	// Create render target view descriptor heap and depth stencil view descriptor heap
 	CreateRTVDescriptorHeap();
 
 	// Create frame resources (RTV for each frame)
@@ -95,17 +95,11 @@ void Graphics::Shutdown()
 
 void Graphics::Render()
 {
+	PopulateCommandList();
 	//////////////////////////////
 	// POPULATE COMMAND LIST /////
 	//////////////////////////////
-	// Reset command list allocatory
-	// Reset command list
-	// Set graphics root signature
-	// Set viewport and scissor rectangles
-	// Set resource barrier indicating back buffer is to be used as render target
-	// Record commands into command list
-	// Indicate back buffer will be used to present after command list has executed
-	// Close command list
+	
 
 	//////////////////////////////
 	// EXECUTE COMMAND LIST //////
@@ -227,6 +221,14 @@ void Graphics::CreateRTVDescriptorHeap()
 	ThrowIfFailed(pDevice->CreateDescriptorHeap(&rtvDescHeapDesc, __uuidof(ID3D12DescriptorHeap), &pRTVDescriptorHeap));
 
 	pRTVDescriptorSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	D3D12_DESCRIPTOR_HEAP_DESC dsvDescHeapDesc = {};
+	dsvDescHeapDesc.NumDescriptors = 1;
+	dsvDescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	dsvDescHeapDesc.NodeMask = 0;
+
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&dsvDescHeapDesc, __uuidof(ID3D12DescriptorHeap), &pDSVDescriptorHeap));
 
 }
 
@@ -361,4 +363,54 @@ void Graphics::WaitForPreviousFrame()
 	}
 
 	pFrameIndex = pSwapChain->GetCurrentBackBufferIndex();
+}
+
+void Graphics::PopulateCommandList()
+{
+	// Reset command list allocator
+	ThrowIfFailed(pCommandAllocator->Reset());
+	ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), pPipelineState.Get()));
+
+	// Reset command list
+	ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), pPipelineState.Get()));
+	
+	// Set graphics root signature
+	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
+	
+	// Set viewport and scissor rectangles
+	pVP.Width = 1280;
+	pVP.Height = 960;
+	pVP.TopLeftX = 0;
+	pVP.TopLeftY = 0;
+	pVP.MaxDepth = 1;
+	pVP.MinDepth = 0;
+	pCommandList->RSSetViewports(1, &pVP);
+
+	pScissorRect.top = 0;
+	pScissorRect.left = 0;
+	pScissorRect.right = 1280;
+	pScissorRect.bottom = 960;
+
+	pCommandList->RSSetScissorRects(1, &pScissorRect);
+
+	// Set resource barrier indicating back buffer is to be used as render target
+	// and Set render target to OM
+	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), pFrameIndex, pRTVDescriptorSize);
+	D3D12_CPU_DESCRIPTOR_HANDLE pDSVHandle = pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &pDSVHandle);
+
+	// Record commands into command list
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 1, &pScissorRect);
+	pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	pCommandList->IASetVertexBuffers(0, 1, &pVertexBufferView);
+	pCommandList->DrawInstanced(3, 1, 0, 0);
+
+	// Indicate back buffer will be used to present after command list has executed
+	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	// Close command list
+	pCommandList->Close();
 }
