@@ -27,6 +27,10 @@ public:
 
 	void CreatePipelineState();
 
+	void CreateCommandList();
+
+	void CloseCommandList();
+
 public:
 	class DxException
 	{
@@ -60,6 +64,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3DBlob> pVertexShaderBlob;
 	Microsoft::WRL::ComPtr<ID3DBlob> pPixelShaderBlob;
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipelineState;
+	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pCommandList;
 };
 
 

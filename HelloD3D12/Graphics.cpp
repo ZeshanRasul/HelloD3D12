@@ -68,9 +68,12 @@ void Graphics::Init(HWND hWnd)
 	// Create pipeline state object description and object
 	CreatePipelineState();
 
-
 	// Create command list
+	CreateCommandList();
+
 	// Close command list
+	CloseCommandList();
+
 	// Create and load vertex buffers
 	// Create vertex buffer views
 	// Create fence
@@ -274,5 +277,14 @@ void Graphics::CreatePipelineState()
 	psoDesc.SampleDesc.Count = 1;
 
 	ThrowIfFailed(pDevice->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pPipelineState)));
+}
 
+void Graphics::CreateCommandList()
+{
+	ThrowIfFailed(pDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, pCommandAllocator.Get(), pPipelineState.Get(), __uuidof(ID3D12CommandList), &pCommandList));
+}
+
+void Graphics::CloseCommandList()
+{
+	ThrowIfFailed(pCommandList->Close());
 }
