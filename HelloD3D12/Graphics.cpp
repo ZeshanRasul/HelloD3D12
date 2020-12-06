@@ -76,9 +76,9 @@ void Graphics::Init(HWND hWnd)
 
 	// Create and load vertex buffers 
 	// and Copy vertices data to vertex buffer
+	// and Create vertex buffer views
 	CreateVertexBuffer();
 
-	// Create vertex buffer views
 	// Create fence
 	// Create event handle
 	// Wait for GPU to complete (check on fence)
@@ -320,4 +320,9 @@ void Graphics::CreateVertexBuffer()
 	ThrowIfFailed(pVertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
 	memcpy(pVertexDataBegin, vertices, sizeof(vertices));
 	pVertexBuffer->Unmap(0, nullptr);
+
+	pVertexBufferView.BufferLocation = pVertexBuffer->GetGPUVirtualAddress();
+	pVertexBufferView.SizeInBytes = sizeof(Vertex);
+	pVertexBufferView.StrideInBytes = vertexBufferSize;
+
 }

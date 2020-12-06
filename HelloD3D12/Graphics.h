@@ -68,6 +68,8 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipelineState;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pCommandList;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pVertexBuffer;
+
+	D3D12_VERTEX_BUFFER_VIEW pVertexBufferView;
 };
 
 
