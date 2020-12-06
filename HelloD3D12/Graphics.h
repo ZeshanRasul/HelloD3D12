@@ -39,6 +39,8 @@ public:
 
 	void PopulateCommandList();
 
+	void CreateDepthStencilView();
+
 
 
 public:
@@ -70,6 +72,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pRTVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pDSVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
+	Microsoft::WRL::ComPtr<ID3D12Resource> pDepthStencilView;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> pRootSignature;
 	Microsoft::WRL::ComPtr<ID3DBlob> pVertexShaderBlob;
