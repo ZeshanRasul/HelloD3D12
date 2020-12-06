@@ -90,29 +90,35 @@ void Graphics::Init(HWND hWnd)
 void Graphics::Shutdown()
 {
 	// Wait for GPU to finish (final check on fence)
+	WaitForPreviousFrame();
 	// Close event handle
+	CloseHandle(pFenceEvent);
 }
 
 void Graphics::Render()
 {
-	PopulateCommandList();
 	//////////////////////////////
 	// POPULATE COMMAND LIST /////
 	//////////////////////////////
+	PopulateCommandList();
 	
 
 	//////////////////////////////
 	// EXECUTE COMMAND LIST //////
 	//////////////////////////////
+	ID3D12CommandList* ppCommandLists[] = { pCommandList.Get() };
+	pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	//////////////////////////////
 	// PRESENT COMMAND LIST //////
 	//////////////////////////////
+	ThrowIfFailed(pSwapChain->Present(1, 0));
 
 	//////////////////////////////
 	// WAIT FOR GPU TO FINISH ////
 	//////////////////////////////
 	// Check on fence
+	WaitForPreviousFrame();
 
 }
 
@@ -271,8 +277,8 @@ void Graphics::CreatePipelineState()
 {
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
 	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOUR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"COLOUR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 	
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
@@ -281,7 +287,7 @@ void Graphics::CreatePipelineState()
 	psoDesc.PS = {reinterpret_cast<UINT8*>(pPixelShaderBlob->GetBufferPointer()), pPixelShaderBlob->GetBufferSize()};
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+//	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
 	psoDesc.SampleMask = UINT_MAX;
@@ -313,8 +319,8 @@ void Graphics::CreateVertexBuffer()
 	Vertex vertices[] =
 	{
 		{{0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-		{{-0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-		{{0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}}
+		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+		{{-0.5f, -0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}}
 	};
 
 	const UINT vertexBufferSize = sizeof(vertices);
@@ -332,8 +338,8 @@ void Graphics::CreateVertexBuffer()
 	pVertexBuffer->Unmap(0, nullptr);
 
 	pVertexBufferView.BufferLocation = pVertexBuffer->GetGPUVirtualAddress();
-	pVertexBufferView.SizeInBytes = sizeof(Vertex);
-	pVertexBufferView.StrideInBytes = vertexBufferSize;
+	pVertexBufferView.SizeInBytes = vertexBufferSize;
+	pVertexBufferView.StrideInBytes = sizeof(Vertex);
 }
 
 void Graphics::CreateFence()
@@ -369,7 +375,6 @@ void Graphics::PopulateCommandList()
 {
 	// Reset command list allocator
 	ThrowIfFailed(pCommandAllocator->Reset());
-	ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), pPipelineState.Get()));
 
 	// Reset command list
 	ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), pPipelineState.Get()));
@@ -398,12 +403,13 @@ void Graphics::PopulateCommandList()
 	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), pFrameIndex, pRTVDescriptorSize);
-	D3D12_CPU_DESCRIPTOR_HANDLE pDSVHandle = pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &pDSVHandle);
+//	CD3DX12_CPU_DESCRIPTOR_HANDLE pDSVHandle(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
 
 	// Record commands into command list
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 1, &pScissorRect);
+	//pCommandList->ClearDepthStencilView(pDSVHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCommandList->IASetVertexBuffers(0, 1, &pVertexBufferView);
 	pCommandList->DrawInstanced(3, 1, 0, 0);
@@ -412,5 +418,5 @@ void Graphics::PopulateCommandList()
 	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	// Close command list
-	pCommandList->Close();
+	CloseCommandList();
 }

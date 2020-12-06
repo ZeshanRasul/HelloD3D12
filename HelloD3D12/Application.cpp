@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "Graphics.h"
 #include <assert.h>
 
 #define BIND_EVENT_FN(x) std::bind(&x, this, std::placeholders::_1)
@@ -34,6 +35,8 @@ int Application::Run()
 		{
 			return *ecode;
 		}
+		Graphics& graphics = m_Window->GetGraphics();
+		graphics.Render();
 	}
 
 	return 0;

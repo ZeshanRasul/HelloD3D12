@@ -84,6 +84,7 @@ void Window::Init(const WindowProps& props)
 
 void Window::Shutdown()
 {
+	m_Graphics->Shutdown();
 	DestroyWindow(m_Hwnd);
 }
 
