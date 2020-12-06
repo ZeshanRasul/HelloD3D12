@@ -1,6 +1,8 @@
 #include "Graphics.h"
 
 Graphics::Graphics()
+	:
+	pFrameIndex(0)
 {
 }
 
@@ -82,6 +84,7 @@ void Graphics::Init(HWND hWnd)
 	CreateFence();
 
 	// Wait for GPU to complete (check on fence)
+	WaitForPreviousFrame();
 }
 
 void Graphics::Shutdown()
@@ -204,9 +207,14 @@ void Graphics::CreateSwapChain(HWND hWnd)
 	
 	//DXGI_SWAP_CHAIN_FULLSCREEN_DESC scFSDesc = {};
 
+	Microsoft::WRL::ComPtr<IDXGISwapChain1> pTempSwapChain;
 
 
-	ThrowIfFailed(pFactory2->CreateSwapChainForHwnd(pCommandQueue.Get(), hWnd, &scDesc, nullptr, nullptr, &pSwapChain));
+	ThrowIfFailed(pFactory2->CreateSwapChainForHwnd(pCommandQueue.Get(), hWnd, &scDesc, nullptr, nullptr, &pTempSwapChain));
+
+	ThrowIfFailed(pTempSwapChain.As(&pSwapChain));
+	pFrameIndex = pSwapChain->GetCurrentBackBufferIndex();
+
 }
 
 void Graphics::CreateRTVDescriptorHeap()
@@ -336,4 +344,21 @@ void Graphics::CreateFence()
 	{
 		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
 	}
+}
+
+void Graphics::WaitForPreviousFrame()
+{
+	// Signal and increment the fence value
+	const UINT64 fence = pFenceValue;
+	ThrowIfFailed(pCommandQueue->Signal(pFence.Get(), fence));
+	pFenceValue++;
+
+	// Wait until the previous frame is finished
+	if (pFence->GetCompletedValue() < fence)
+	{
+		ThrowIfFailed(pFence->SetEventOnCompletion(fence, pFenceEvent));
+		WaitForSingleObject(pFenceEvent, INFINITE);
+	}
+
+	pFrameIndex = pSwapChain->GetCurrentBackBufferIndex();
 }

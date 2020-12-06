@@ -35,6 +35,8 @@ public:
 
 	void CreateFence();
 
+	void WaitForPreviousFrame();
+
 
 public:
 	class DxException
@@ -61,7 +63,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Debug> pDebugController;
 	Microsoft::WRL::ComPtr<ID3D12Device> pDevice;
 	Microsoft::WRL::ComPtr<ID3D12CommandQueue> pCommandQueue;
-	Microsoft::WRL::ComPtr<IDXGISwapChain1> pSwapChain;
+	Microsoft::WRL::ComPtr<IDXGISwapChain3> pSwapChain;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pRTVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
@@ -76,6 +78,7 @@ private:
 	D3D12_VERTEX_BUFFER_VIEW pVertexBufferView;
 	UINT64 pFenceValue;
 	HANDLE pFenceEvent;
+	UINT pFrameIndex;
 };
 
 
