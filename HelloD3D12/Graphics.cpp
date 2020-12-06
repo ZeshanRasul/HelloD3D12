@@ -74,7 +74,8 @@ void Graphics::Init(HWND hWnd)
 	// Close command list
 	CloseCommandList();
 
-	// Create and load vertex buffers
+	// Create and load vertex buffers 
+	// and Copy vertices data to vertex buffer
 	CreateVertexBuffer();
 
 	// Create vertex buffer views
@@ -309,8 +310,14 @@ void Graphics::CreateVertexBuffer()
 	const UINT vertexBufferSize = sizeof(vertices);
 
 	ThrowIfFailed(pDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
 		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
-		D3D12_RESOURCE_STATE_COMMON, nullptr,
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
 		__uuidof(ID3D12Resource), &pVertexBuffer));
+
+	UINT8* pVertexDataBegin;
+	CD3DX12_RANGE readRange(0, 0);
+	ThrowIfFailed(pVertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+	memcpy(pVertexDataBegin, vertices, sizeof(vertices));
+	pVertexBuffer->Unmap(0, nullptr);
 }
