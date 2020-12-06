@@ -342,16 +342,51 @@ void Graphics::CreateVertexBuffer()
 {
 	struct Vertex
 	{
-		DirectX::XMFLOAT2 position;
+		DirectX::XMFLOAT3 position;
 		DirectX::XMFLOAT4 colour;
 	};
 
 	Vertex vertices[] =
 	{
-		{{0.0f, 0.5f}, {1.0f, 0.0f, 0.0f, 1.0f}},
-		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f, 1.0f}},
-		{{-0.5f, -0.5f}, {0.0f, 0.0f, 1.0f, 1.0f}}
+		{{DirectX::XMFLOAT3(-0.33f, -0.33f, -0.33f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(-0.33f, +0.33f, -0.33f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(+0.33f, +0.33f, -0.33f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(+0.33f, -0.33f, -0.33f)}, {DirectX::XMFLOAT4(0.33f, 0.33f, 0.33f, 1.0f)}},
+		{{DirectX::XMFLOAT3(-0.33f, -0.33f, +0.33f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(-0.33f, +0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(+0.33f, +0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		{{DirectX::XMFLOAT3(+0.33f, -0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.33f, 0.33f, 0.33f, 1.0f)}}
 	};
+
+	std::uint16_t indices[] =
+	{
+		// Front face
+		0, 1, 2,
+		0, 2, 3,
+
+		// Back face
+		4, 6, 5,
+		4, 7, 6,
+
+		// Left face
+		4, 5, 1,
+		4, 1, 0,
+
+		// Right face
+		3, 2, 6,
+		3, 6, 7,
+
+		// Top Face
+		1, 5, 6,
+		1, 6, 2,
+
+		// Bottom face
+		4, 0, 3,
+		4, 3, 7
+
+	};
+
+	indicesSize = _countof(indices);
 
 	const UINT vertexBufferSize = sizeof(vertices);
 
@@ -370,6 +405,24 @@ void Graphics::CreateVertexBuffer()
 	pVertexBufferView.BufferLocation = pVertexBuffer->GetGPUVirtualAddress();
 	pVertexBufferView.SizeInBytes = vertexBufferSize;
 	pVertexBufferView.StrideInBytes = sizeof(Vertex);
+
+	const UINT indexBufferSize = sizeof(vertices);
+
+	ThrowIfFailed(pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+		__uuidof(ID3D12Resource), &pIndexBuffer));
+
+	UINT8* pIndexDataBegin;
+	CD3DX12_RANGE readRange1(0, 0);
+	ThrowIfFailed(pIndexBuffer->Map(0, &readRange1, reinterpret_cast<void**>(&pIndexDataBegin)));
+	memcpy(pIndexDataBegin, indices, sizeof(indices));
+	pIndexBuffer->Unmap(0, nullptr);
+
+	pIndexBufferView.BufferLocation = pIndexBuffer->GetGPUVirtualAddress();
+	pIndexBufferView.SizeInBytes = indexBufferSize;
+	pIndexBufferView.Format = DXGI_FORMAT_R16_UINT;
 }
 
 void Graphics::CreateFence()
@@ -442,7 +495,8 @@ void Graphics::PopulateCommandList()
 	pCommandList->ClearDepthStencilView(pDSVHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCommandList->IASetVertexBuffers(0, 1, &pVertexBufferView);
-	pCommandList->DrawInstanced(3, 1, 0, 0);
+	pCommandList->IASetIndexBuffer(&pIndexBufferView);
+	pCommandList->DrawIndexedInstanced(indicesSize, 1, 0, 0, 0);
 
 	// Indicate back buffer will be used to present after command list has executed
 	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));

@@ -61,6 +61,7 @@ public:
 private:
 	static const int SwapChainBufferCount = 2;
 	UINT pRTVDescriptorSize;
+	UINT indicesSize;
 
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> pAdapter;
 	Microsoft::WRL::ComPtr<IDXGIAdapter1> pWarpAdapter;
@@ -80,6 +81,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pPipelineState;
 	Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> pCommandList;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pVertexBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pIndexBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Fence> pFence;
 
 	D3D12_VIEWPORT pVP;
@@ -87,6 +89,7 @@ private:
 	D3D12_RECT pScissorRect;
 
 	D3D12_VERTEX_BUFFER_VIEW pVertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW pIndexBufferView;
 	UINT64 pFenceValue;
 	HANDLE pFenceEvent;
 	UINT pFrameIndex;
