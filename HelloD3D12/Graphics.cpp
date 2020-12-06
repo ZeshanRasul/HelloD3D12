@@ -62,8 +62,6 @@ void Graphics::Init(HWND hWnd)
 	// Compile shaders
 	CompileShaders();
 
-	
-	
 	// Create input element description to define vertex input layout and
 	// Create pipeline state object description and object
 	CreatePipelineState();
@@ -79,10 +77,10 @@ void Graphics::Init(HWND hWnd)
 	// and Create vertex buffer views
 	CreateVertexBuffer();
 
-	// Create fence
+	// Create fence 	
+	// and Create event handle
 	CreateFence();
 
-	// Create event handle
 	// Wait for GPU to complete (check on fence)
 }
 
@@ -332,4 +330,10 @@ void Graphics::CreateFence()
 {
 	ThrowIfFailed(pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence)));
 	pFenceValue = 1;
+
+	pFenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (pFenceEvent == nullptr)
+	{
+		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+	}
 }

@@ -75,6 +75,7 @@ private:
 
 	D3D12_VERTEX_BUFFER_VIEW pVertexBufferView;
 	UINT64 pFenceValue;
+	HANDLE pFenceEvent;
 };
 
 
