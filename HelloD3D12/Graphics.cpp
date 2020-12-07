@@ -102,14 +102,16 @@ void Graphics::Shutdown()
 	CloseHandle(pFenceEvent);
 }
 
+struct ConstantBuffer
+{
+	DirectX::XMFLOAT4X4 transform;
+};
+
 void Graphics::Update()
 {
-	struct ConstantBuffer
-	{
-		DirectX::XMFLOAT4X4 transform;
-	};
+	
 
-	ConstantBuffer cb;
+	ConstantBuffer cb2;
 	
 	float x = pRadius * sinf(pPhi) * cosf(pTheta);
 	float z = pRadius * sinf(pPhi) * sinf(pTheta);
@@ -125,13 +127,13 @@ void Graphics::Update()
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
-	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(worldViewProj));
-//	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
+	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(worldViewProj));
+	//DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationY(45.0f)));
 
 	UINT8* pConstantDataBegin;
 	CD3DX12_RANGE readRange(0, 0);
 	ThrowIfFailed(pConstantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pConstantDataBegin)));
-	memcpy(pConstantDataBegin, &cb, CalcConstantBufferByteSize(sizeof(ConstantBuffer)));
+	memcpy(pConstantDataBegin, &cb2, CalcConstantBufferByteSize(sizeof(ConstantBuffer)));
 	pConstantBuffer->Unmap(0, nullptr);
 
 }
@@ -485,7 +487,7 @@ void Graphics::CreateVertexBuffer()
 
 	};
 	
-	indicesSize = indices.size() / sizeof(uint16_t);
+	indicesSize = indices.size();
 
 	const UINT vertexBufferSize = sizeof(vertices);
 
@@ -533,10 +535,7 @@ void Graphics::CreateConstantBuffer()
 
 	ThrowIfFailed(pDevice->CreateDescriptorHeap(&constantBufferHeapDesc, __uuidof(ID3D12DescriptorHeap), &pConstantBufferDescriptorHeap));
 
-	struct ConstantBuffer
-	{
-		DirectX::XMFLOAT4X4 transform;
-	};
+
 
 	ConstantBuffer cb;
 
@@ -554,7 +553,7 @@ void Graphics::CreateConstantBuffer()
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
 	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(worldViewProj));
-//	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
+//	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationZ(45.0f)));
 
 	
 
@@ -650,16 +649,16 @@ void Graphics::PopulateCommandList()
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), pFrameIndex, pRTVDescriptorSize);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE pDSVHandle(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	pCommandList->ClearDepthStencilView(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	// Record commands into command list
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	pCommandList->ClearDepthStencilView(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 1, &pScissorRect);
 	pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCommandList->IASetVertexBuffers(0, 1, &pVertexBufferView);
 	pCommandList->IASetIndexBuffer(&pIndexBufferView);
-	pCommandList->DrawIndexedInstanced(indicesSize, 1, 0, 0, 0);
+	pCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
 
 	// Indicate back buffer will be used to present after command list has executed
 	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
