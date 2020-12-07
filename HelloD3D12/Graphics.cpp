@@ -114,7 +114,7 @@ void Graphics::Update()
 	ConstantBuffer cb2;
 	
 	float x = pRadius * sinf(pPhi) * cosf(pTheta);
-	float z = pRadius * sinf(pPhi) * sinf(pTheta);
+	float z = (pRadius * sinf(pPhi) * sinf(pTheta));
 	float y = pRadius * cosf(pPhi);
 
 	DirectX::XMVECTOR pos = DirectX::XMVectorSet(x, y, z, 1.0f);
@@ -122,13 +122,13 @@ void Graphics::Update()
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
-	DirectX::XMMATRIX world = DirectX::XMMatrixIdentity();
+	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
 	DirectX::XMMATRIX proj = DirectX::XMMatrixIdentity();
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
 	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(worldViewProj));
-	//DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationY(45.0f)));
+//	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationY(0.45f)));
 
 	UINT8* pConstantDataBegin;
 	CD3DX12_RANGE readRange(0, 0);
@@ -448,14 +448,14 @@ void Graphics::CreateVertexBuffer()
 	
 	std::array<Vertex, sizeof(Vertex)> vertices =
 	{
-		Vertex{{DirectX::XMFLOAT3(-0.666f, -0.666f, -0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-0.666f, +0.666f, -0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+0.666f, +0.666f, -0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+0.666f, -0.666f, -0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-0.666f, -0.666f, +0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-0.666f, +0.666f, +0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+0.666f, +0.666f, +0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+0.666f, -0.666f, +0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}}
+		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}}
 	};
 
 	std::array<std::uint16_t, 36> indices
@@ -487,7 +487,7 @@ void Graphics::CreateVertexBuffer()
 
 	};
 	
-	indicesSize = indices.size();
+	indicesSize = (UINT)indices.size();
 
 	const UINT vertexBufferSize = sizeof(vertices);
 
@@ -632,8 +632,8 @@ void Graphics::PopulateCommandList()
 	pVP.Height = 960;
 	pVP.TopLeftX = 0;
 	pVP.TopLeftY = 0;
-	pVP.MaxDepth = 1;
-	pVP.MinDepth = 0;
+	pVP.MaxDepth = 1.0f;
+	pVP.MinDepth = 0.0f;
 	pCommandList->RSSetViewports(1, &pVP);
 
 	pScissorRect.top = 0;
