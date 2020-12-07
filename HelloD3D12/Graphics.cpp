@@ -121,12 +121,15 @@ void Graphics::Update()
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
+	DirectX::XMVECTOR verticalRotationAxis = DirectX::XMVectorSet(1, 0, 1, 0);
+
 
 	float angle = (pDx * 90.0f);
+	float verticalAngle = (pDy * 90.0f);
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 //	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
-	DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle));
+	DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle));
 	DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(0.45f, 0.75f, 0.1f, 100.0f);
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
