@@ -116,13 +116,13 @@ void Graphics::Update()
 	float z = (pRadius * sinf(pPhi) * sinf(pTheta));
 	float y = pRadius * cosf(pPhi);
 
-	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, +10, -20, 1.0f);
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, 0, -20, 1.0f);
 	DirectX::XMVECTOR target = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 	DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
 
-	float angle = (dt * 90.0f);
+	float angle = (pDx * 90.0f);
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 //	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
@@ -707,6 +707,7 @@ void Graphics::OnMouseMove(WPARAM buttonState, int x, int y)
 		pTheta += dx;
 		pPhi += dy;
 
+
 		pPhi = std::clamp(pPhi, 0.1f, DirectX::XM_PI - 0.1f);
 
 		const auto old = last;
@@ -714,7 +715,30 @@ void Graphics::OnMouseMove(WPARAM buttonState, int x, int y)
 		std::chrono::duration<float> frameTime = last - old;
 		dt += frameTime.count();
 
-	
+		pDx += DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - pLastMousePos.x));
+		pDy += DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - pLastMousePos.y));
+		
+		
+		/*
+		if (x > pLastMousePos.x)
+		{
+		}
+		else if (x < pLastMousePos.x)
+		{
+			pDx = dy;
+		}
+
+		if (y > pLastMousePos.y)
+		{
+			pDy = dt * -1;
+		}
+		else if (y < pLastMousePos.y)
+		{
+			pDy = dt * 1;
+		}
+		*/
+
+
 
 	}
 	else if ((buttonState & MK_RBUTTON) != 0)
@@ -740,7 +764,6 @@ void Graphics::OnMouseDown(WPARAM buttonState, int x, int y)
 
 void Graphics::OnMouseUp()
 {
-	dt = 0;
 }
 
 

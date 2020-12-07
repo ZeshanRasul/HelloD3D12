@@ -115,6 +115,8 @@ private:
 
 	std::chrono::steady_clock::time_point last;
 	float dt;
+	float pDx;
+	float pDy;
 };
 
 
