@@ -326,7 +326,7 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		const POINTS pt = MAKEPOINTS(lParam);
 		input.OnLeftReleased();
-
+		m_Graphics->OnMouseUp();
 		if (pt.x < 0 || pt.x >(int)m_Data.Width || pt.y < 0 || pt.y >(int)m_Data.Height)
 		{
 			ReleaseCapture();

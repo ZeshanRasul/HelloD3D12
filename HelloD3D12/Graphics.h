@@ -51,6 +51,8 @@ public:
 
 	void OnMouseDown(WPARAM buttonState, int x, int y);
 
+	void OnMouseUp();
+
 
 public:
 	class DxException
