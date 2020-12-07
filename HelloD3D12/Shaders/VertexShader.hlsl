@@ -13,6 +13,7 @@ VSOutput main(float3 position : POSITION, float4 colour : COLOUR)
 {
 	VSOutput vso;
 	vso.position = mul(float4(position, 1.0f), transform);
+//	vso.position = float4(position, 1.0f);
 	vso.colour = colour;
 	return vso;
 }

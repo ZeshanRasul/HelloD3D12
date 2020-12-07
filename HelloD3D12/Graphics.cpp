@@ -1,5 +1,6 @@
 #include "Graphics.h"
 #include <algorithm>
+#include <array>
 
 Graphics::Graphics()
 	:
@@ -125,6 +126,7 @@ void Graphics::Update()
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
 	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(worldViewProj));
+//	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
 
 	UINT8* pConstantDataBegin;
 	CD3DX12_RANGE readRange(0, 0);
@@ -253,7 +255,6 @@ void Graphics::CreateSwapChain(HWND hWnd)
 
 	ThrowIfFailed(pTempSwapChain.As(&pSwapChain));
 	pFrameIndex = pSwapChain->GetCurrentBackBufferIndex();
-
 }
 
 void Graphics::CreateRTVDescriptorHeap()
@@ -275,7 +276,6 @@ void Graphics::CreateRTVDescriptorHeap()
 	
 
 	ThrowIfFailed(pDevice->CreateDescriptorHeap(&dsvDescHeapDesc, __uuidof(ID3D12DescriptorHeap), &pDSVDescriptorHeap));
-
 }
 
 void Graphics::CreateFrameResources()
@@ -335,11 +335,27 @@ void Graphics::CreateDepthStencilView()
 	depthStencilViewDesc.Format = DXGI_FORMAT_D32_FLOAT;
 	depthStencilViewDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	depthStencilViewDesc.Flags = D3D12_DSV_FLAG_NONE;
+	depthStencilViewDesc.Texture2D.MipSlice = 0;
 
 	D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
 	depthOptimizedClearValue.Format = DXGI_FORMAT_D32_FLOAT;
 	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 	depthOptimizedClearValue.DepthStencil.Stencil = 0;
+
+	/*
+	D3D12_RESOURCE_DESC depthStencilDesc = {};
+	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	depthStencilDesc.Alignment = 0;
+	depthStencilDesc.Width = 1280;
+	depthStencilDesc.Height = 960;
+	depthStencilDesc.DepthOrArraySize = 1;
+	depthStencilDesc.MipLevels = 1;
+	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	depthStencilDesc.SampleDesc.Count = 1;
+	depthStencilDesc.SampleDesc.Quality = 0;
+	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+	*/
 
 	ThrowIfFailed(pDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
@@ -350,16 +366,24 @@ void Graphics::CreateDepthStencilView()
 		__uuidof(ID3D12Resource),
 		&pDepthStencilView
 	));
-	
+	pDSVDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
+
 	pDevice->CreateDepthStencilView(pDepthStencilView.Get(), &depthStencilViewDesc, pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	/*
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	pDevice->CreateShaderResourceView(&pShaderResourceView, &srvDesc, )
+	*/
 }
 
 void Graphics::CreatePipelineState()
 {
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
 	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOUR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 8, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"COLOUR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 	
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
@@ -368,7 +392,7 @@ void Graphics::CreatePipelineState()
 	psoDesc.PS = {reinterpret_cast<UINT8*>(pPixelShaderBlob->GetBufferPointer()), pPixelShaderBlob->GetBufferSize()};
 	psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 	psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(D3D12_DEFAULT);
 	psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	psoDesc.InputLayout = { inputElementDescs, _countof(inputElementDescs) };
@@ -397,48 +421,71 @@ void Graphics::CreateVertexBuffer()
 		DirectX::XMFLOAT3 position;
 		DirectX::XMFLOAT4 colour;
 	};
-
-	Vertex vertices[] =
+	/*
+	std::array<Vertex, sizeof(Vertex)> vertices =
 	{
-		{{DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(-1.0f, +1.0f, -1.0f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(+1.0f, +1.0f, -1.0f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(+1.0f, -1.0f, -1.0f)}, {DirectX::XMFLOAT4(0.33f, 0.33f, 0.33f, 1.0f)}},
-		{{DirectX::XMFLOAT3(-1.0f, -1.0f, +1.0f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(-1.0f, +1.0f, +1.0f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(+1.0f, +1.0f, +1.0f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		{{DirectX::XMFLOAT3(+1.0f, -1.0f, +1.0f)}, {DirectX::XMFLOAT4(0.33f, 0.33f, 0.33f, 1.0f)}}
+		Vertex{{DirectX::XMFLOAT3(-0.5f, +0.5f, +0.5f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.5f, -0.5f, +0.5f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.5f, -0.5f, +0.5f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.5f, +0.5f, +0.5f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.75f, +0.75f, +0.7f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(0.0f, 0.0f, +0.7f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.75f, +0.0f, +0.7f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.0f, +0.75f, +0.7f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}}
 	};
 
-	uint16_t indices[] =
+	std::array<std::uint16_t, 36> indices
 	{
-		// Front face
+		0, 1, 2,
+		0, 3, 1,
+		4, 5, 6,
+		4, 7, 5
+		
+	};
+	*/
+	
+	std::array<Vertex, sizeof(Vertex)> vertices =
+	{
+		Vertex{{DirectX::XMFLOAT3(-0.666f, -0.666f, -0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.666f, +0.666f, -0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.666f, +0.666f, -0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.666f, -0.666f, -0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.666f, -0.666f, +0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.666f, +0.666f, +0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.666f, +0.666f, +0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.666f, -0.666f, +0.666f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}}
+	};
+
+	std::array<std::uint16_t, 36> indices
+	{
+		// front face
 		0, 1, 2,
 		0, 2, 3,
 
-		// Back face
+		// back face
 		4, 6, 5,
 		4, 7, 6,
 
-		// Left face
+		// left face
 		4, 5, 1,
 		4, 1, 0,
 
-		// Right face
+		// right face
 		3, 2, 6,
 		3, 6, 7,
 
-		// Top Face
+		// top face
 		1, 5, 6,
 		1, 6, 2,
 
-		// Bottom face
+		// bottom face
 		4, 0, 3,
 		4, 3, 7
 
-	};
 
-	indicesSize = _countof(indices);
+	};
+	
+	indicesSize = indices.size() / sizeof(uint16_t);
 
 	const UINT vertexBufferSize = sizeof(vertices);
 
@@ -451,7 +498,7 @@ void Graphics::CreateVertexBuffer()
 	UINT8* pVertexDataBegin;
 	CD3DX12_RANGE readRange(0, 0);
 	ThrowIfFailed(pVertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
-	memcpy(pVertexDataBegin, vertices, sizeof(vertices));
+	memcpy(pVertexDataBegin, vertices.data(), sizeof(vertices));
 	pVertexBuffer->Unmap(0, nullptr);
 
 	pVertexBufferView.BufferLocation = pVertexBuffer->GetGPUVirtualAddress();
@@ -469,7 +516,7 @@ void Graphics::CreateVertexBuffer()
 	UINT8* pIndexDataBegin;
 	CD3DX12_RANGE readRange1(0, 0);
 	ThrowIfFailed(pIndexBuffer->Map(0, &readRange1, reinterpret_cast<void**>(&pIndexDataBegin)));
-	memcpy(pIndexDataBegin, indices, sizeof(indices));
+	memcpy(pIndexDataBegin, indices.data(), sizeof(indices));
 	pIndexBuffer->Unmap(0, nullptr);
 
 	pIndexBufferView.BufferLocation = pIndexBuffer->GetGPUVirtualAddress();
@@ -488,7 +535,7 @@ void Graphics::CreateConstantBuffer()
 
 	struct ConstantBuffer
 	{
-		DirectX::XMFLOAT4X4 x;
+		DirectX::XMFLOAT4X4 transform;
 	};
 
 	ConstantBuffer cb;
@@ -506,7 +553,9 @@ void Graphics::CreateConstantBuffer()
 	DirectX::XMMATRIX proj = DirectX::XMMatrixIdentity();
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
-	DirectX::XMStoreFloat4x4(&cb.x, DirectX::XMMatrixTranspose(worldViewProj));
+	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(worldViewProj));
+//	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
+
 	
 
 	UINT constantBufferByteSize = CalcConstantBufferByteSize(sizeof(ConstantBuffer));
@@ -601,12 +650,12 @@ void Graphics::PopulateCommandList()
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), pFrameIndex, pRTVDescriptorSize);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE pDSVHandle(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	pCommandList->OMSetRenderTargets(1, &rtvHandle, true, &pDSVHandle);
+	pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	// Record commands into command list
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	pCommandList->ClearDepthStencilView(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	pCommandList->ClearRenderTargetView(rtvHandle, clearColor, 1, &pScissorRect);
-	pCommandList->ClearDepthStencilView(pDSVHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCommandList->IASetVertexBuffers(0, 1, &pVertexBufferView);
 	pCommandList->IASetIndexBuffer(&pIndexBufferView);
