@@ -1,5 +1,6 @@
 #pragma once
 #include "stdafx.h"
+#include <chrono>
 
 class Graphics
 {
@@ -47,6 +48,8 @@ public:
 	UINT CalcConstantBufferByteSize(UINT byteSize);
 
 	void OnMouseMove(WPARAM buttonState, int x, int y);
+
+	void OnMouseDown(WPARAM buttonState, int x, int y);
 
 
 public:
@@ -107,6 +110,9 @@ private:
 	float pRadius = 1.0f;
 
 	POINT pLastMousePos;
+
+	std::chrono::steady_clock::time_point last;
+	float dt;
 };
 
 

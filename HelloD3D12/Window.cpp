@@ -288,6 +288,7 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDOWN:
 	{
 		const POINTS pt = MAKEPOINTS(lParam);
+		m_Graphics->OnMouseDown(wParam, pt.x, pt.y);
 		input.OnLeftPressed();
 
 		SetForegroundWindow(hWnd);

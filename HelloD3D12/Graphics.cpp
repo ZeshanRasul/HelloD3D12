@@ -117,13 +117,17 @@ void Graphics::Update()
 	float z = (pRadius * sinf(pPhi) * sinf(pTheta));
 	float y = pRadius * cosf(pPhi);
 
-	DirectX::XMVECTOR pos = DirectX::XMVectorSet(x, y, z, 1.0f);
-	DirectX::XMVECTOR target = DirectX::XMVectorZero();
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, 0, -10, 1.0f);
+	DirectX::XMVECTOR target = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
+	DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
+	float angle = (dt * 90);
+
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
-	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
-	DirectX::XMMATRIX proj = DirectX::XMMatrixIdentity();
+//	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
+	DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, angle);
+	DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(0.45f, 0.75f, 0.1f, 100.0f);
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
@@ -448,14 +452,14 @@ void Graphics::CreateVertexBuffer()
 	
 	std::array<Vertex, sizeof(Vertex)> vertices =
 	{
-		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}}
+		Vertex{{DirectX::XMFLOAT3(-0.33f, -0.33f, -0.33f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.33f, +0.33f, -0.33f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.33f, +0.33f, -0.33f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.33f, -0.33f, -0.33f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.33f, -0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-0.33f, +0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.33f, +0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+0.33f, -0.33f, +0.33f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}}
 	};
 
 	std::array<std::uint16_t, 36> indices
@@ -543,15 +547,20 @@ void Graphics::CreateConstantBuffer()
 	float z = pRadius * sinf(pPhi) * sinf(pTheta);
 	float y = pRadius * cosf(pPhi);
 
-	DirectX::XMVECTOR pos = DirectX::XMVectorSet(x, y, z, 1.0f);
-	DirectX::XMVECTOR target = DirectX::XMVectorZero();
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, 0, -5, 1.0f);
+	DirectX::XMVECTOR target = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
+	DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
+	float angle = (dt * 90);
+
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
-	DirectX::XMMATRIX world = DirectX::XMMatrixIdentity();
+	//	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
+	DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, angle);
 	DirectX::XMMATRIX proj = DirectX::XMMatrixIdentity();
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
+
 	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(worldViewProj));
 //	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationZ(45.0f)));
 
@@ -596,6 +605,7 @@ void Graphics::CreateFence()
 
 void Graphics::WaitForPreviousFrame()
 {
+	// TODO: Fix this
 	// Signal and increment the fence value
 	const UINT64 fence = pFenceValue;
 	ThrowIfFailed(pCommandQueue->Signal(pFence.Get(), fence));
@@ -658,7 +668,7 @@ void Graphics::PopulateCommandList()
 	pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCommandList->IASetVertexBuffers(0, 1, &pVertexBufferView);
 	pCommandList->IASetIndexBuffer(&pIndexBufferView);
-	pCommandList->DrawIndexedInstanced(36, 1, 0, 0, 0);
+	pCommandList->DrawIndexedInstanced(indicesSize, 1, 0, 0, 0);
 
 	// Indicate back buffer will be used to present after command list has executed
 	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
@@ -696,6 +706,12 @@ void Graphics::OnMouseMove(WPARAM buttonState, int x, int y)
 		pPhi += dy;
 
 		pPhi = std::clamp(pPhi, 0.1f, DirectX::XM_PI - 0.1f);
+
+		const auto old = last;
+		last = std::chrono::steady_clock::now();
+		std::chrono::duration<float> frameTime = last - old;
+		dt = frameTime.count();
+
 	}
 	else if ((buttonState & MK_RBUTTON) != 0)
 	{
@@ -707,6 +723,12 @@ void Graphics::OnMouseMove(WPARAM buttonState, int x, int y)
 		pRadius = std::clamp(pRadius, 1.0f, 15.0f);
 	}
 
+	pLastMousePos.x = x;
+	pLastMousePos.y = y;
+}
+
+void Graphics::OnMouseDown(WPARAM buttonState, int x, int y)
+{
 	pLastMousePos.x = x;
 	pLastMousePos.y = y;
 }
