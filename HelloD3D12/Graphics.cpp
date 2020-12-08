@@ -105,11 +105,6 @@ void Graphics::Shutdown()
 	CloseHandle(pFenceEvent);
 }
 
-struct ConstantBuffer
-{
-	DirectX::XMFLOAT4X4 transform;
-};
-
 void Graphics::Update()
 {
 	
@@ -332,11 +327,12 @@ void Graphics::CreateRootSignature()
 
 	*/
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 	slotRootParameter[0].InitAsConstantBufferView(0);
 	slotRootParameter[1].InitAsConstantBufferView(1);
+	slotRootParameter[2].InitAsConstantBufferView(2);
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Microsoft::WRL::ComPtr<ID3DBlob> signature;
 	Microsoft::WRL::ComPtr<ID3DBlob> error;
@@ -676,6 +672,47 @@ void Graphics::CreateConstantBuffer()
 	ThrowIfFailed(pMaterialConstantBuffer->Map(0, &readRange2, reinterpret_cast<void**>(&pMatConstantDataBegin)));
 	memcpy(pMatConstantDataBegin, &matCB, matConstantBufferByteSize);
 	pMaterialConstantBuffer->Unmap(0, nullptr);
+
+	/// Lights cbPass Constant Buffer
+	D3D12_DESCRIPTOR_HEAP_DESC lightsCBHeapDesc = {};
+	lightsCBHeapDesc.NumDescriptors = 1;
+	lightsCBHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	lightsCBHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&lightsCBHeapDesc, __uuidof(ID3D12DescriptorHeap), &pLightsCBDescriptorHeap));
+
+	PassConstants lightsCB;
+	lightsCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+	lightsCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+	lightsCB.Lights[0].Strength = { 0.6f, -0.6f, 0.6f };
+	lightsCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+	lightsCB.Lights[1].Strength = { 0.3f, -0.3f, 0.3f };
+	lightsCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
+	lightsCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
+
+	UINT lightConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(PassConstants));
+
+	ThrowIfFailed(pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(lightConstantBufferByteSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+		__uuidof(ID3D12Resource), &pLightsConstantBuffer
+	));
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC lightsConstantBufferViewDesc = {};
+	lightsConstantBufferViewDesc.BufferLocation = pLightsConstantBuffer->GetGPUVirtualAddress();
+	lightsConstantBufferViewDesc.SizeInBytes = lightConstantBufferByteSize;
+
+	pDevice->CreateConstantBufferView(&lightsConstantBufferViewDesc, pLightsCBDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	ZeroMemory(&lightsCB, sizeof(PassConstants));
+
+	UINT8* pLightsConstantDataBegin;
+	CD3DX12_RANGE readRange3(0, 0);
+	ThrowIfFailed(pLightsConstantBuffer->Map(0, &readRange3, reinterpret_cast<void**>(&pLightsConstantDataBegin)));
+	memcpy(pLightsConstantDataBegin, &lightsCB, lightConstantBufferByteSize);
+	pLightsConstantBuffer->Unmap(0, nullptr);
+
 }
 
 void Graphics::CreateFence()
@@ -726,13 +763,17 @@ void Graphics::PopulateCommandList()
 	*/
 	UINT objConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(ConstantBuffer));
 	UINT matConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(MaterialConstants));
+	UINT lightConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(PassConstants));
 
 	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = pConstantBuffer->GetGPUVirtualAddress();
 
 	pCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 
-	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = pMaterialConstantBuffer->GetGPUVirtualAddress() + pMaterials["cube"]->MaterialCBIndex* matConstantBufferByteSize;
+	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = pMaterialConstantBuffer->GetGPUVirtualAddress() + pMaterials["cube"]->MaterialCBIndex * matConstantBufferByteSize;
 	pCommandList->SetGraphicsRootConstantBufferView(1, matCBAddress);
+
+	D3D12_GPU_VIRTUAL_ADDRESS lightsCBAddress = pLightsConstantBuffer->GetGPUVirtualAddress();
+	pCommandList->SetGraphicsRootConstantBufferView(2, lightsCBAddress);
 
 	// Set viewport and scissor rectangles
 	pVP.Width = 1280;

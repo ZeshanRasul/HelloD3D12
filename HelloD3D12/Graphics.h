@@ -5,6 +5,37 @@
 
 const int gNumFrameResources = 3;
 
+struct ConstantBuffer
+{
+	DirectX::XMFLOAT4X4 transform;
+};
+
+#define MaxLights 16
+
+struct Light
+{
+	DirectX::XMFLOAT3 Strength; // Light colour
+	float FalloffStart; // point/spot light only
+	DirectX::XMFLOAT3 Direction; // Directional/spot light only
+	float FalloffEnd; // point/spot light only
+	DirectX::XMFLOAT3 Position; // point/spot light only
+	float SpotPower; // spot light only
+};
+
+struct PassConstants
+{
+	DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	// Indices[0, NUM_DIR_LIGHTS] are directional lights;
+	// indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS] are
+	// point lights;
+	// indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, 
+	// NUM_DIR_LIGHTS+NUM_POINT_LIGHTS+NUM_SPOT_LIGHTS]
+	// are spot lights for a maximum of MaxLights per object.
+	Light Lights [MaxLights];
+
+};
+
 struct Material
 {
 	std::string Name;
@@ -29,16 +60,6 @@ struct Material
 	  0.0f, 1.0f, 0.0f, 0.0f,
 	  0.0f, 0.0f, 1.0f, 0.0f,
 	  0.0f, 0.0f, 0.0f, 1.0 };
-};
-
-struct Light
-{
-	DirectX::XMFLOAT3 Strength; // Light colour
-	float FalloffStart; // point/spot light only
-	DirectX::XMFLOAT3 Direction; // Directional/spot light only
-	float FalloffEnd; // point/spot light only
-	DirectX::XMFLOAT3 Position; // point/spot light only
-	float SpotPower; // spot light only
 };
 
 class Graphics
@@ -126,6 +147,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pDSVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pConstantBufferDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pMatCBufDescriptorHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pLightsCBDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
 	Microsoft::WRL::ComPtr<ID3D12Resource> pDepthStencilView;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
@@ -138,6 +160,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> pIndexBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pConstantBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pMaterialConstantBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pLightsConstantBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Fence> pFence;
 
 	D3D12_VIEWPORT pVP;
