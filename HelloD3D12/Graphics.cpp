@@ -502,8 +502,31 @@ void Graphics::CreateVertexBuffer()
 {
 	struct Vertex
 	{
-		DirectX::XMFLOAT3 position;
-		DirectX::XMFLOAT3 normal;
+		Vertex() {}
+		Vertex(
+			const DirectX::XMFLOAT3& p,
+			const DirectX::XMFLOAT3& n,
+			const DirectX::XMFLOAT3& t,
+			const DirectX::XMFLOAT2& uv) :
+			Position(p),
+			Normal(n),
+			TangentU(t),
+			TexC(uv) {}
+		Vertex(
+			float px, float py, float pz,
+			float nx, float ny, float nz,
+			float tx, float ty, float tz,
+			float u, float v) :
+			Position(px, py, pz),
+			Normal(nx, ny, nz),
+			TangentU(tx, ty, tz),
+			TexC(u, v) {}
+
+		DirectX::XMFLOAT3 Position;
+		DirectX::XMFLOAT3 Normal;
+		DirectX::XMFLOAT3 TangentU;
+		DirectX::XMFLOAT2 TexC;
+
 	};
 	/*
 	std::array<Vertex, sizeof(Vertex)> vertices =
@@ -527,19 +550,61 @@ void Graphics::CreateVertexBuffer()
 		
 	};
 	*/
-		
+	/*
 	std::array<Vertex, sizeof(Vertex)> vertices =
 	{
-		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT3(-1.0f, 1.0f, -1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT3(1.0f, 1.0f, -1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT3(-1.0f, -1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT3(-1.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}, {DirectX::XMFLOAT2(1.0f, 0.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT3(-1.0f, 1.0f, -1.0f)}, {DirectX::XMFLOAT2(1.0f, 0.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT3(1.0f, 1.0f, -1.0f)}, {DirectX::XMFLOAT2(1.0f, 0.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f)}, {DirectX::XMFLOAT2(1.0f, 0.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT3(-1.0f, -1.0f, 1.0f)}, {DirectX::XMFLOAT2(-1.0f, 0.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT3(-1.0f, 1.0f, 1.0f)}, {DirectX::XMFLOAT2(-1.0f, 0.0f)}},
 		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f)}},
 		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT3(1.0f, -1.0f, 1.0f)}}
 	};
+	*/
 
+	std::array<Vertex, 24> vertices;
+	float w2 = 1.0f;
+	float h2 = 1.0f;
+	float d2 = 1.0f;
+	
+	// Fill in the front face vertex data.
+	vertices[0] = Vertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	vertices[1] = Vertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	vertices[2] = Vertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	vertices[3] = Vertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	
+	// Fill in the back face vertex data.
+	vertices[4] = Vertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	vertices[5] = Vertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	vertices[6] = Vertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	vertices[7] = Vertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	
+	// Fill in the top face vertex data.
+	vertices[8] = Vertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	vertices[9] = Vertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	vertices[10] = Vertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	vertices[11] = Vertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	
+	// Fill in the bottom face vertex data.
+	vertices[12] = Vertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	vertices[13] = Vertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	vertices[14] = Vertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	vertices[15] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	
+	// Fill in the left face vertex data.
+	vertices[16] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
+	vertices[17] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	vertices[18] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
+	vertices[19] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
+	
+	// Fill in the right face vertex data.
+	vertices[20] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+	vertices[21] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	vertices[22] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+	vertices[23] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+	/*
 	std::array<std::uint16_t, 36> indices
 	{
 		// front face
@@ -568,8 +633,34 @@ void Graphics::CreateVertexBuffer()
 
 
 	};
+	*/
+	std::array<UINT32, 36> indices;
+
+	// Fill in the front face index data
+	indices[0] = 0; indices[1] = 1; indices[2] = 2;
+	indices[3] = 0; indices[4] = 2; indices[5] = 3;
+
+	// Findicesll indicesn the back face indicesndex data
+	indices[6] = 4; indices[7] = 5; indices[8] = 6;
+	indices[9] = 4; indices[10] = 6; indices[11] = 7;
+
+	// Findicesll indicesn the top face indicesndex data
+	indices[12] = 8; indices[13] = 9; indices[14] = 10;
+	indices[15] = 8; indices[16] = 10; indices[17] = 11;
+
+	// Findicesll indicesn the bottom face indicesndex data
+	indices[18] = 12; indices[19] = 13; indices[20] = 14;
+	indices[21] = 12; indices[22] = 14; indices[23] = 15;
+
+	// Findicesll indicesn the left face indicesndex data
+	indices[24] = 16; indices[25] = 17; indices[26] = 18;
+	indices[27] = 16; indices[28] = 18; indices[29] = 19;
+
+	// Findicesll indicesn the rindicesght face indicesndex data
+	indices[30] = 20; indices[31] = 21; indices[32] = 22;
+	indices[33] = 20; indices[34] = 22; indices[35] = 23;
 	
-	indicesSize = (UINT)indices.size();
+	indicesSize = (UINT)sizeof(indices);
 
 	const UINT vertexBufferSize = sizeof(vertices);
 
@@ -605,7 +696,7 @@ void Graphics::CreateVertexBuffer()
 
 	pIndexBufferView.BufferLocation = pIndexBuffer->GetGPUVirtualAddress();
 	pIndexBufferView.SizeInBytes = indexBufferSize;
-	pIndexBufferView.Format = DXGI_FORMAT_R16_UINT;
+	pIndexBufferView.Format = DXGI_FORMAT_R32_UINT;
 }
 
 void Graphics::BuildMaterials()
