@@ -148,7 +148,7 @@ void Graphics::Update()
 	lightsCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
 	lightsCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
-	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(0, 1, 1, 1.0f);
+	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(0, -10, -10, 1.0f);
 	DirectX::XMVECTOR viewTarget = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR viewUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -173,7 +173,7 @@ void Graphics::Update()
 
 	DirectX::XMMATRIX gViewProj = gView * gProj;
 	DirectX::XMStoreFloat3(&lightsCB.eyePosW, viewPos);
-	DirectX::XMStoreFloat4x4(&lightsCB.view, DirectX::XMMatrixTranspose(gView));
+	DirectX::XMStoreFloat4x4(&lightsCB.view, DirectX::XMMatrixTranspose(gViewProj));
 //	DirectX::XMStoreFloat4x4(&lightsCB.proj, DirectX::XMMatrixTranspose(gProj));
 
 
@@ -738,7 +738,7 @@ void Graphics::CreateConstantBuffer()
 	lightsCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
 	lightsCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
-	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(0, 1, 1, 1.0f);
+	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(0, -10, -10, 1.0f);
 	DirectX::XMVECTOR viewTarget = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR viewUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
