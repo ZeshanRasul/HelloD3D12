@@ -31,6 +31,15 @@ struct Material
 	  0.0f, 0.0f, 0.0f, 1.0 };
 };
 
+struct Light
+{
+	DirectX::XMFLOAT3 Strength; // Light colour
+	float FalloffStart; // point/spot light only
+	DirectX::XMFLOAT3 Direction; // Directional/spot light only
+	float FalloffEnd; // point/spot light only
+	DirectX::XMFLOAT3 Position; // point/spot light only
+	float SpotPower; // spot light only
+};
 
 class Graphics
 {
