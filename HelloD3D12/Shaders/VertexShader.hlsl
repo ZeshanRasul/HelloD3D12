@@ -25,7 +25,10 @@ cbuffer cbMaterial : register(b1)
 
 cbuffer cbPass : register (b2)
 {
+	float3 gEyePosW;
+	// TODO: Look out for padding here
 	matrix gView;
+	matrix gProj;
 // See if we can get by without using gView for now
 //	matrix gView;
 	float4 gAmbientLight;
@@ -39,19 +42,33 @@ cbuffer cbPass : register (b2)
 	Light gLights[MaxLights];
 }
 
-struct VSOutput
+struct VSInput
 {
-	float4 position : SV_POSITION;
-	float3 normal : NORMAL;
+	float3 PosL : POSITION;
+	float3 NormalL : NORMAL;
 };
 
-VSOutput main(float3 position : POSITION, float3 normal : NORMAL)
+struct VSOutput
+{
+	float4 PosH : SV_POSITION;
+	float3 PosW : POSITION;
+	float3 NormalW : NORMAL;
+};
+
+VSOutput main(VSInput vsInput)
 {
 
-	// for now just use gWorld, see if we need to use gWorld and then multiply that by gView
-	VSOutput vso;
-	vso.position = mul(float4(position, 1.0f), gWorld);
-//	vso.position = float4(position, 1.0f);
-	vso.normal = normal;
-	return vso;
+	VSOutput vsOut = (VSOutput)0.0f;
+
+	// Transform to world space.
+	float4 posW = mul(float4(vsInput.PosL, 1.0f), gWorld);
+	vsOut.PosW = posW.xyz;
+
+	// Assumes nonuniform scaling; otherwise, need to 
+	// use inverse-transpose of world matrix.
+	vsOut.NormalW = mul(vsInput.NormalL, (float3x3)gWorld);
+
+	vsOut.PosH = mul(posW, gView);
+//	vsOut.PosH = mul(vsOut.PosH, gProj);
+	return vsOut;
 }

@@ -1,3 +1,17 @@
+#ifndef NUM_DIR_LIGHTS
+	#define NUM_DIR_LIGHTS 1
+#endif
+
+#ifndef NUM_POINT_LIGHTS
+	#define NUM_POINT_LIGHTS 0
+#endif
+
+#ifndef NUM_SPOT_LIGHTS
+#define NUM_SPOT_LIGHTS 0
+#endif
+
+#define MaxLights 16
+
 struct Light
 {
 	float3 Strength; // Light colour
@@ -127,13 +141,92 @@ float3 ComputeSpotLight(Light L, Material mat, float3 pos, float3 normal, float3
 	return BlinnPhong(lightStrength, lightVec, normal, toEye, mat);
 }
 
+float4 ComputeLighting(Light gLights[MaxLights], Material mat, float3 pos, float3 normal, float3 toEye, float3 shadowFactor)
+{
+	float3 result = 0.0f;
+
+	int i = 0;
+
+	#if (NUM_DIR_LIGHTS > 0)
+	for (i = 0; i < NUM_DIR_LIGHTS; i++)
+	{
+		result += shadowFactor * ComputeDirectionalLight(gLights[i], mat, normal, toEye);
+	}
+	#endif
+
+	#if (NUM_POINT_LIGHTS > 0)
+	for (i = NUM_DIR_LIGHTS; i < NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; i++)
+	{
+		result += ComputePointLight(gLights[i], mat, pos, normal, toEye);
+	}
+	#endif
+
+	#if (NUM_SPOT_LIGHTS > 0)
+	for (i = NUM_DIR_LIGHTS + NUM_POINT_LIGHTS; i < NUM_DIR_LIGHTS + NUM_POINT_LIGHTS + NUM_SPOT_LIGHTS; i++)
+	{
+		result += ComputeSpotLight(gLights[i], mat, pos, normal, toEye);
+	}
+	#endif
+
+	return float4(result, 0.0f);
+}
+
+cbuffer cbMaterial : register(b1)
+{
+	float4 gDiffuseAlbedo;
+	float3 gFresnelR0;
+	float gRoughness;
+	float4x4 gMatTransform;
+}
+
+cbuffer cbPass : register (b2)
+{
+	float3 gEyePosW;
+	// TODO: Look out for padding here
+	matrix gView;
+	matrix gProj;
+	// See if we can get by without using gView for now
+	//	matrix gView;
+	float4 gAmbientLight;
+
+	// Indices[0, NUM_DIR_LIGHTS] are directional lights;
+	// indices [NUM_DIR_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHTS] are
+	// point lights;
+	// indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, 
+	// NUM_DIR_LIGHTS+NUM_POINT_LIGHTS+NUM_SPOT_LIGHTS]
+	// are spot lights for a maximum of MaxLights per object.
+	Light gLights[MaxLights];
+}
+
 struct PSInput
 {
-	float4 position : SV_POSITION;
-	float3 normal : NORMAL;
+	float4 PosH : SV_POSITION;
+	float3 PosW : POSITION;
+	float3 NormalW : NORMAL;
 };
 
-float3 main(PSInput psInput) : SV_TARGET
+float4 main(PSInput psInput) : SV_TARGET
 {
-	return psInput.normal;
+	// Interpolating normal can unnormalize it, 
+	// so renormalize it.
+	psInput.NormalW = normalize(psInput.NormalW);
+
+	// Vector from point being lit to eye.
+	float3 toEyeW = normalize(gEyePosW - psInput.PosW);
+
+	// Indirect lighting.
+	float4 ambient = gAmbientLight * gDiffuseAlbedo;
+
+	// Direct lighting.
+	const float shininess = 1.0f - gRoughness;
+	Material mat = { gDiffuseAlbedo, gFresnelR0, shininess };
+	float3 shadowFactor = 1.0f;
+	float4 directLight = ComputeLighting(gLights, mat, psInput.PosW, psInput.NormalW, toEyeW, shadowFactor);
+
+	float4 litColour = ambient + directLight;
+
+	//Common convention to take alpha from diffuse material.
+	litColour.a = gDiffuseAlbedo.a;
+
+	return litColour;
 }

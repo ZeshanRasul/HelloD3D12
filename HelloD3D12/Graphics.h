@@ -25,6 +25,8 @@ struct Light
 struct PassConstants
 {
 	DirectX::XMFLOAT4X4 view;
+	DirectX::XMFLOAT4X4 proj;
+	DirectX::XMFLOAT3 eyePosW;
 	DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	// Indices[0, NUM_DIR_LIGHTS] are directional lights;
