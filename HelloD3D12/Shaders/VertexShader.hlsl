@@ -26,6 +26,7 @@ cbuffer cbMaterial : register(b1)
 cbuffer cbPass : register (b2)
 {
 	float3 gEyePosW;
+	float padding;
 	// TODO: Look out for padding here
 	matrix gView;
 	matrix gProj;
@@ -68,6 +69,7 @@ VSOutput main(VSInput vsInput)
 	// use inverse-transpose of world matrix.
 	vsOut.NormalW = mul(vsInput.NormalL, (float3x3)gWorld);
 
+//	vsOut.PosH = posW;
 	vsOut.PosH = mul(posW, gView);
 //	vsOut.PosH = mul(vsOut.PosH, gProj);
 	return vsOut;
