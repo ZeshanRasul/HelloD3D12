@@ -1,6 +1,7 @@
 #include "Graphics.h"
 #include <algorithm>
 #include <array>
+#include "DDSTextureLoader.h"
 
 Graphics::Graphics()
 	:
@@ -75,6 +76,34 @@ void Graphics::Init(HWND hWnd)
 
 	// Create command list
 	CreateCommandList();
+
+	auto woodCrateTex = std::make_unique<Texture>();
+	woodCrateTex->Name = "woodCrateTex";
+	woodCrateTex->Filename = L"Textures/WoodCrate01.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(
+		pDevice.Get(), pCommandList.Get(), woodCrateTex->Filename.c_str(),
+		woodCrateTex->Resource, woodCrateTex->UploadHeap));
+
+	// TODO: May need to change num to 3
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&srvHeapDesc, __uuidof(ID3D12DescriptorHeap), &pSRVDescriptorHeap));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(pSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = woodCrateTex->Resource->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = woodCrateTex->Resource->GetDesc().MipLevels;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+
+	pDevice->CreateShaderResourceView(woodCrateTex->Resource.Get(), &srvDesc, hDescriptor);
+
+
 
 	// Close command list
 	CloseCommandList();
@@ -388,12 +417,18 @@ void Graphics::CreateRootSignature()
 
 	*/
 
-	CD3DX12_ROOT_PARAMETER slotRootParameter[3];
-	slotRootParameter[0].InitAsConstantBufferView(0);
-	slotRootParameter[1].InitAsConstantBufferView(1);
-	slotRootParameter[2].InitAsConstantBufferView(2);
+	CD3DX12_DESCRIPTOR_RANGE texTable;
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(3, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	slotRootParameter[1].InitAsConstantBufferView(0);
+	slotRootParameter[2].InitAsConstantBufferView(1);
+	slotRootParameter[3].InitAsConstantBufferView(2);
+
+	auto staticSamplers = GetStaticSamplers();
+
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Microsoft::WRL::ComPtr<ID3DBlob> signature;
 	Microsoft::WRL::ComPtr<ID3DBlob> error;
@@ -467,7 +502,8 @@ void Graphics::CreatePipelineState()
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 	};
 	
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
@@ -933,13 +969,17 @@ void Graphics::PopulateCommandList()
 
 	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = pConstantBuffer->GetGPUVirtualAddress();
 
-	pCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(pSRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
+	pCommandList->SetGraphicsRootDescriptorTable(0, tex);
+
+	pCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
 
 	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = pMaterialConstantBuffer->GetGPUVirtualAddress() + pMaterials["cube"]->MaterialCBIndex * matConstantBufferByteSize;
-	pCommandList->SetGraphicsRootConstantBufferView(1, matCBAddress);
+	pCommandList->SetGraphicsRootConstantBufferView(2, matCBAddress);
 
 	D3D12_GPU_VIRTUAL_ADDRESS lightsCBAddress = pLightsConstantBuffer->GetGPUVirtualAddress();
-	pCommandList->SetGraphicsRootConstantBufferView(2, lightsCBAddress);
+	pCommandList->SetGraphicsRootConstantBufferView(3, lightsCBAddress);
 
 	// Set viewport and scissor rectangles
 	pVP.Width = 1280;
@@ -1067,6 +1107,19 @@ void Graphics::OnMouseDown(WPARAM buttonState, int x, int y)
 
 void Graphics::OnMouseUp()
 {
+}
+
+std::array<CD3DX12_STATIC_SAMPLER_DESC, 1> Graphics::GetStaticSamplers()
+{
+	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
+		0,
+		D3D12_FILTER_MIN_MAG_MIP_POINT,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP
+	);
+
+	return { pointWrap };
 }
 
 

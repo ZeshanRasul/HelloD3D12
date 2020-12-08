@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="DDSTextureLoader.h" />
     <ClInclude Include="Events\ApplicationEvent.h" />
     <ClInclude Include="Events\Event.h" />
     <ClInclude Include="Graphics.h" />
@@ -160,6 +161,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="DDSTextureLoader.cpp" />
     <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Window.cpp" />

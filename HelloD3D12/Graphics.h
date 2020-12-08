@@ -82,6 +82,18 @@ struct MaterialConstants
 	  0.0f, 0.0f, 0.0f, 1.0 };
 };
 
+struct Texture
+{
+	std::string Name;
+
+	std::wstring Filename;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> Resource = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12Resource> UploadHeap = nullptr;
+
+	
+};
+
 class Graphics
 {
 public:
@@ -135,6 +147,7 @@ public:
 
 	void BuildMaterials();
 
+	std::array<CD3DX12_STATIC_SAMPLER_DESC, 1> GetStaticSamplers();
 
 public:
 	class DxException
@@ -168,6 +181,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pConstantBufferDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pMatCBufDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pLightsCBDescriptorHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pSRVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
 	Microsoft::WRL::ComPtr<ID3D12Resource> pDepthStencilView;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
