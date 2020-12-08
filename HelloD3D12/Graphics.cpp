@@ -84,6 +84,9 @@ void Graphics::Init(HWND hWnd)
 	// and Create vertex buffer views
 	CreateVertexBuffer();
 
+	// Build materials for use in material constant buffer 
+	BuildMaterials();
+
 	CreateConstantBuffer();
 
 	// Create fence 	
@@ -533,8 +536,38 @@ void Graphics::CreateVertexBuffer()
 	pIndexBufferView.Format = DXGI_FORMAT_R16_UINT;
 }
 
+void Graphics::BuildMaterials()
+{
+	auto cubeMaterial = std::make_unique<Material>();
+	cubeMaterial->Name = "cube";
+	cubeMaterial->MaterialCBIndex = 0;
+	cubeMaterial->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+	cubeMaterial->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
+	cubeMaterial->Roughness = 0.0f;
+
+	pMaterials["cube"] = std::move(cubeMaterial);
+}
+
+struct MaterialConstants
+{
+	// Material constant buffer data used for shading
+	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+
+	float Roughness = 0.25f;
+
+	DirectX::XMFLOAT4X4 MaterialTransform =
+	{ 1.0f, 0.0f, 0.0f, 0.0f,
+	  0.0f, 1.0f, 0.0f, 0.0f,
+	  0.0f, 0.0f, 1.0f, 0.0f,
+	  0.0f, 0.0f, 0.0f, 1.0 };
+};
+
 void Graphics::CreateConstantBuffer()
 {
+	// CUBE ROTATION CBUFFER////////////
+
 	D3D12_DESCRIPTOR_HEAP_DESC constantBufferHeapDesc = {};
 	constantBufferHeapDesc.NumDescriptors = 1;
 	constantBufferHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -542,13 +575,7 @@ void Graphics::CreateConstantBuffer()
 
 	ThrowIfFailed(pDevice->CreateDescriptorHeap(&constantBufferHeapDesc, __uuidof(ID3D12DescriptorHeap), &pConstantBufferDescriptorHeap));
 
-
-
 	ConstantBuffer cb;
-
-	float x = pRadius * sinf(pPhi) * cosf(pTheta);
-	float z = pRadius * sinf(pPhi) * sinf(pTheta);
-	float y = pRadius * cosf(pPhi);
 
 	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, 0, -10, 1.0f);
 	DirectX::XMVECTOR target = DirectX::XMVectorSet(0, 0, 0, 1);
@@ -566,7 +593,6 @@ void Graphics::CreateConstantBuffer()
 
 
 	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(worldViewProj));
-//	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationZ(45.0f)));
 
 	
 
@@ -593,6 +619,44 @@ void Graphics::CreateConstantBuffer()
 	memcpy(pConstantDataBegin, &cb, constantBufferByteSize);
 	pConstantBuffer->Unmap(0, nullptr);
 
+
+	////// MATERIAL CONSTANT BUFFER ///////
+
+	D3D12_DESCRIPTOR_HEAP_DESC matCBHeapDesc = {};
+	matCBHeapDesc.NumDescriptors = 1;
+	matCBHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	matCBHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&matCBHeapDesc, __uuidof(ID3D12DescriptorHeap), &pMatCBufDescriptorHeap));
+	
+	MaterialConstants matCB;
+	matCB.DiffuseAlbedo = pMaterials["cube"]->DiffuseAlbedo;
+	matCB.FresnelR0 = pMaterials["cube"]->FresnelR0;
+	matCB.MaterialTransform = pMaterials["cube"]->MaterialTransform;
+	matCB.Roughness = pMaterials["cube"]->Roughness;
+
+	UINT matConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(MaterialConstants));
+
+	ThrowIfFailed(pDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(matConstantBufferByteSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+		_uuidof(ID3D12Resource), &pMaterialConstantBuffer
+	));
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC matConstantBufferViewDesc = {};
+	matConstantBufferViewDesc.BufferLocation = pMaterialConstantBuffer->GetGPUVirtualAddress();
+	matConstantBufferViewDesc.SizeInBytes = matConstantBufferByteSize;
+
+	pDevice->CreateConstantBufferView(&matConstantBufferViewDesc, pMatCBufDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	ZeroMemory(&matCB, sizeof(MaterialConstants));
+
+	UINT8* pMatConstantDataBegin;
+	CD3DX12_RANGE readRange2(0, 0);
+	ThrowIfFailed(pMaterialConstantBuffer->Map(0, &readRange2, reinterpret_cast<void**>(&pMatConstantDataBegin)));
+	memcpy(pMatConstantDataBegin, &matCB, matConstantBufferByteSize);
+	pMaterialConstantBuffer->Unmap(0, nullptr);
 }
 
 void Graphics::CreateFence()
@@ -768,5 +832,7 @@ void Graphics::OnMouseDown(WPARAM buttonState, int x, int y)
 void Graphics::OnMouseUp()
 {
 }
+
+
 
 

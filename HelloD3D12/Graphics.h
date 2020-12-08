@@ -1,6 +1,36 @@
 #pragma once
 #include "stdafx.h"
 #include <chrono>
+#include <unordered_map>
+
+const int gNumFrameResources = 3;
+
+struct Material
+{
+	std::string Name;
+
+	//Index into CBuffer for this material
+	int MaterialCBIndex = -1;
+
+	// Index into shader resource view heap for diffuse texture. Used in texturing.
+	int DiffuseSrvHeapIndex = -1;
+
+	int NumFramesDirety = gNumFrameResources;
+
+	// Material constant buffer data used for shading
+	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
+
+	float Roughness = 0.25f;
+
+	DirectX::XMFLOAT4X4 MaterialTransform =
+	{ 1.0f, 0.0f, 0.0f, 0.0f,
+	  0.0f, 1.0f, 0.0f, 0.0f,
+	  0.0f, 0.0f, 1.0f, 0.0f,
+	  0.0f, 0.0f, 0.0f, 1.0 };
+};
+
 
 class Graphics
 {
@@ -53,6 +83,8 @@ public:
 
 	void OnMouseUp();
 
+	void BuildMaterials();
+
 
 public:
 	class DxException
@@ -84,6 +116,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pRTVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pDSVDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pConstantBufferDescriptorHeap;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> pMatCBufDescriptorHeap;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pRenderTargets[SwapChainBufferCount];
 	Microsoft::WRL::ComPtr<ID3D12Resource> pDepthStencilView;
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> pCommandAllocator;
@@ -95,6 +128,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> pVertexBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pIndexBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pConstantBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> pMaterialConstantBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Fence> pFence;
 
 	D3D12_VIEWPORT pVP;
@@ -117,7 +151,10 @@ private:
 	float dt;
 	float pDx;
 	float pDy;
+
+	std::unordered_map<std::string, std::unique_ptr<Material>> pMaterials;
 };
+
 
 
 
