@@ -125,7 +125,7 @@ void Graphics::Update()
 		DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 	//	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
 		DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle));
-		DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), 1280/960, 0.1f, 100.0f);
+		DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, 1280/960, 0.1f, 100.0f);
 //	DirectX::XMMATRIX world = DirectX::XMMatrixIdentity();
 		DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
@@ -162,7 +162,7 @@ void Graphics::Update()
 	lightsCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
 	lightsCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
-	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(0, -10, -10, 1.0f);
+	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(pRadius, pRadius, pRadius, 1.0f);
 	DirectX::XMVECTOR viewTarget = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR viewUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -737,7 +737,7 @@ void Graphics::CreateConstantBuffer()
 	lightsCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
 	lightsCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
 
-	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(0, -10, -10, 1.0f);
+	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(pRadius, pRadius, pRadius, 1.0f);
 	DirectX::XMVECTOR viewTarget = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR viewUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 

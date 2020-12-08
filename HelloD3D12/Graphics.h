@@ -195,7 +195,7 @@ private:
 
 	float pTheta = 1.5f * DirectX::XM_PI;
 	float pPhi = DirectX::XM_PIDIV4;
-	float pRadius = 1.0f;
+	float pRadius = 5.0f;
 
 	POINT pLastMousePos;
 
