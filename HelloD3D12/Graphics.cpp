@@ -116,7 +116,7 @@ void Graphics::Update()
 	float z = (pRadius * sinf(pPhi) * sinf(pTheta));
 	float y = pRadius * cosf(pPhi);
 
-	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, 0, -20, 1.0f);
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, -10, -10, 1.0f);
 	DirectX::XMVECTOR target = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -129,8 +129,8 @@ void Graphics::Update()
 
 	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
 //	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
-	DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle));
-	DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(0.45f, 0.75f, 0.1f, 100.0f);
+	DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle)) * DirectX::XMMatrixRotationY(DirectX::XMConvertToRadians(45.0f));
+	DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), 1280/960, 0.1f, 100.0f);
 
 	DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
