@@ -304,29 +304,48 @@ void Graphics::CreateFrameResources()
 
 void Graphics::CreateRootSignature()
 {
-	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[1];
+	/*
+	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[2];
 	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
 	descriptorTableRanges[0].NumDescriptors = 1;
 	descriptorTableRanges[0].BaseShaderRegister = 0;
 	descriptorTableRanges[0].RegisterSpace = 0;
 	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	descriptorTableRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorTableRanges[1].NumDescriptors = 1;
+	descriptorTableRanges[1].BaseShaderRegister = 0;
+	descriptorTableRanges[1].RegisterSpace = 0;
+	descriptorTableRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
 
 	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
 	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges);
 	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
 
-	D3D12_ROOT_PARAMETER rootParameters[1];
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable2;
+	descriptorTable2.NumDescriptorRanges = _countof(descriptorTableRanges2);
+	descriptorTable2.pDescriptorRanges = &descriptorTableRanges2[0];
+
+	D3D12_ROOT_PARAMETER rootParameters[2];
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	rootParameters[0].DescriptorTable = descriptorTable;
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParameters[1].DescriptorTable = descriptorTable2;
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc;
-	rootSigDesc.Init(_countof(rootParameters), rootParameters, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	*/
+
+	CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+	slotRootParameter[0].InitAsConstantBufferView(0);
+	slotRootParameter[1].InitAsConstantBufferView(1);
+
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(2, slotRootParameter, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Microsoft::WRL::ComPtr<ID3DBlob> signature;
 	Microsoft::WRL::ComPtr<ID3DBlob> error;
 
-	ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error));
+	ThrowIfFailed(D3D12SerializeRootSignature(&rootSigDesc, D3D_ROOT_SIGNATURE_VERSION_1, signature.GetAddressOf(), error.GetAddressOf()));
 	ThrowIfFailed(pDevice->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), __uuidof(ID3D12RootSignature), &pRootSignature));
 }
 
@@ -699,11 +718,21 @@ void Graphics::PopulateCommandList()
 	
 	// Set graphics root signature
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
-	
+	/*
 	ID3D12DescriptorHeap* descriptorHeaps[] = { pConstantBufferDescriptorHeap.Get() };
 	pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	pCommandList->SetGraphicsRootDescriptorTable(0, pConstantBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	*/
+	UINT objConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(ConstantBuffer));
+	UINT matConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(MaterialConstants));
+
+	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = pConstantBuffer->GetGPUVirtualAddress();
+
+	pCommandList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+
+	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = pMaterialConstantBuffer->GetGPUVirtualAddress() + pMaterials["cube"]->MaterialCBIndex* matConstantBufferByteSize;
+	pCommandList->SetGraphicsRootConstantBufferView(1, matCBAddress);
 
 	// Set viewport and scissor rectangles
 	pVP.Width = 1280;
