@@ -130,10 +130,10 @@ float3 ComputeSpotLight(Light L, Material mat, float3 pos, float3 normal, float3
 struct PSInput
 {
 	float4 position : SV_POSITION;
-	float4 colour : COLOUR;
+	float3 normal : NORMAL;
 };
 
-float4 main(PSInput psInput) : SV_TARGET
+float3 main(PSInput psInput) : SV_TARGET
 {
-	return psInput.colour;
+	return psInput.normal;
 }

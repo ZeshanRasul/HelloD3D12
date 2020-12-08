@@ -41,16 +41,16 @@ cbuffer cbPass : register (b2)
 struct VSOutput
 {
 	float4 position : SV_POSITION;
-	float4 colour : COLOUR;
+	float3 normal : NORMAL;
 };
 
-VSOutput main(float3 position : POSITION, float4 colour : COLOUR)
+VSOutput main(float3 position : POSITION, float3 normal : NORMAL)
 {
 
 	// for now just use gWorld, see if we need to use gWorld and then multiply that by gView
 	VSOutput vso;
 	vso.position = mul(float4(position, 1.0f), gWorld);
 //	vso.position = float4(position, 1.0f);
-	vso.colour = colour;
+	vso.normal = normal;
 	return vso;
 }

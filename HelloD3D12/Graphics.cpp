@@ -406,7 +406,7 @@ void Graphics::CreatePipelineState()
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[] =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"COLOUR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 	
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
@@ -442,7 +442,7 @@ void Graphics::CreateVertexBuffer()
 	struct Vertex
 	{
 		DirectX::XMFLOAT3 position;
-		DirectX::XMFLOAT4 colour;
+		DirectX::XMFLOAT3 normal;
 	};
 	/*
 	std::array<Vertex, sizeof(Vertex)> vertices =
@@ -469,14 +469,14 @@ void Graphics::CreateVertexBuffer()
 		
 	std::array<Vertex, sizeof(Vertex)> vertices =
 	{
-		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 1.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT4(0.0f, 1.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 1.0f, 1.0f)}}
+		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT3(-1.0f, 1.0f, -1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT3(1.0f, 1.0f, -1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT3(-1.0f, -1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT3(-1.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f)}},
+		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT3(1.0f, -1.0f, 1.0f)}}
 	};
 
 	std::array<std::uint16_t, 36> indices
