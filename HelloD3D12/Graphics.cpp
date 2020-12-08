@@ -138,6 +138,20 @@ void Graphics::Update()
 	memcpy(pConstantDataBegin, &cb2, CalcConstantBufferByteSize(sizeof(ConstantBuffer)));
 	pConstantBuffer->Unmap(0, nullptr);
 
+	MaterialConstants matCB;
+	matCB.DiffuseAlbedo = pMaterials["cube"]->DiffuseAlbedo;
+	matCB.FresnelR0 = pMaterials["cube"]->FresnelR0;
+	matCB.MaterialTransform = pMaterials["cube"]->MaterialTransform;
+	matCB.Roughness = pMaterials["cube"]->Roughness;
+
+	UINT matConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(MaterialConstants));
+
+	UINT8* pMatConstantDataBegin;
+	CD3DX12_RANGE readRange2(0, 0);
+	ThrowIfFailed(pMaterialConstantBuffer->Map(0, &readRange2, reinterpret_cast<void**>(&pMatConstantDataBegin)));
+	memcpy(pMatConstantDataBegin, &matCB, matConstantBufferByteSize);
+	pMaterialConstantBuffer->Unmap(0, nullptr);
+
 
 	PassConstants lightsCB;
 	lightsCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
@@ -606,21 +620,6 @@ void Graphics::BuildMaterials()
 	pMaterials["cube"] = std::move(cubeMaterial);
 }
 
-struct MaterialConstants
-{
-	// Material constant buffer data used for shading
-	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-	DirectX::XMFLOAT3 FresnelR0 = { 0.01f, 0.01f, 0.01f };
-
-	float Roughness = 0.25f;
-
-	DirectX::XMFLOAT4X4 MaterialTransform =
-	{ 1.0f, 0.0f, 0.0f, 0.0f,
-	  0.0f, 1.0f, 0.0f, 0.0f,
-	  0.0f, 0.0f, 1.0f, 0.0f,
-	  0.0f, 0.0f, 0.0f, 1.0 };
-};
 
 void Graphics::CreateConstantBuffer()
 {

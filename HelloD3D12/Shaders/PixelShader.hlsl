@@ -182,6 +182,7 @@ cbuffer cbMaterial : register(b1)
 cbuffer cbPass : register (b2)
 {
 	float3 gEyePosW;
+	float padding;
 	// TODO: Look out for padding here
 	matrix gView;
 	matrix gProj;
