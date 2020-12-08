@@ -8,6 +8,7 @@ const int gNumFrameResources = 3;
 struct ConstantBuffer
 {
 	DirectX::XMFLOAT4X4 transform;
+	DirectX::XMFLOAT4X4 texTransform;
 };
 
 #define MaxLights 16

@@ -159,6 +159,8 @@ void Graphics::Update()
 		DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
 	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(world));
+	DirectX::XMStoreFloat4x4(&cb2.texTransform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
+
 	//	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationY(0.45f)));
 
 	UINT8* pConstantDataBegin;
@@ -782,6 +784,7 @@ void Graphics::CreateConstantBuffer()
 
 
 	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(world));
+	DirectX::XMStoreFloat4x4(&cb.texTransform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
 
 	
 

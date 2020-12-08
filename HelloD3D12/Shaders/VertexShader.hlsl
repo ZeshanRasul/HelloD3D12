@@ -13,6 +13,7 @@ struct Light
 cbuffer ConstantBuffer : register(b0)
 {
 	matrix gWorld;
+	matrix gTexTransform;
 };
 
 cbuffer cbMaterial : register(b1)
@@ -47,6 +48,7 @@ struct VSInput
 {
 	float3 PosL : POSITION;
 	float3 NormalL : NORMAL;
+	float2 TexC : TEXCOORD;
 };
 
 struct VSOutput
@@ -54,6 +56,7 @@ struct VSOutput
 	float4 PosH : SV_POSITION;
 	float3 PosW : POSITION;
 	float3 NormalW : NORMAL;
+	float2 TexC : TEXCOORD;
 };
 
 VSOutput main(VSInput vsInput)
@@ -69,6 +72,8 @@ VSOutput main(VSInput vsInput)
 	// use inverse-transpose of world matrix.
 	vsOut.NormalW = mul(vsInput.NormalL, (float3x3)gWorld);
 
+	// Output vertex attributes for interpolation across triangle
+	vsOut.TexC = mul(float4(vsInput.TexC, 0.0f, 1.0f), gTexTransform);
 //	vsOut.PosH = posW;
 	vsOut.PosH = mul(posW, gView);
 //	vsOut.PosH = mul(vsOut.PosH, gProj);
