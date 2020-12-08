@@ -25,6 +25,7 @@ cbuffer cbMaterial : register(b1)
 
 cbuffer cbPass : register (b2)
 {
+	matrix gView;
 // See if we can get by without using gView for now
 //	matrix gView;
 	float4 gAmbientLight;
