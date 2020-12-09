@@ -51,11 +51,6 @@ void Graphics::Init(HWND hWnd)
 	// Create render target view descriptor heap and depth stencil view descriptor heap
 	CreateRTVDescriptorHeap();
 
-	// TODO: May need to change num to 3
-
-
-
-
 	// Create frame resources (RTV for each frame)
 	CreateFrameResources();
 
@@ -65,7 +60,6 @@ void Graphics::Init(HWND hWnd)
 	//////////////////////////////
 	// 2) INITIALIZE ASSETS///////
 	//////////////////////////////
-
 
 	// Create command list
 	CreateCommandList();
@@ -97,10 +91,6 @@ void Graphics::Init(HWND hWnd)
 	// Create empty root signature
 	CreateRootSignature();
 
-
-
-
-
 	// Compile shaders
 	CompileShaders();
 
@@ -111,8 +101,6 @@ void Graphics::Init(HWND hWnd)
 	// Create pipeline state object description and object
 	CreatePipelineState();
 
-	
-
 	// Create and load vertex buffers 
 	// and Copy vertices data to vertex buffer
 	// and Create vertex buffer views
@@ -122,17 +110,14 @@ void Graphics::Init(HWND hWnd)
 	BuildMaterials();
 	CreateConstantBuffer();
 
-	
+	// Create fence 	
+	// and Create event handle
 	CreateFence();
 
+	// Close command list
 	CloseCommandList();
 	ID3D12CommandList* ppCommandLists[] = { pCommandList.Get() };
 	pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-	// Close command list
-
-	// Create fence 	
-	// and Create event handle
 
 	// Wait for GPU to complete (check on fence)
 	WaitForPreviousFrame();
@@ -148,32 +133,25 @@ void Graphics::Shutdown()
 
 void Graphics::Update()
 {
-	
 	ConstantBuffer cb2;
 
-		DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, -10, -10, 1.0f);
-		DirectX::XMVECTOR target = DirectX::XMVectorSet(0, 0, 0, 1);
-		DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, -10, -10, 1.0f);
+	DirectX::XMVECTOR target = DirectX::XMVectorSet(0, 0, 0, 1);
+	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-		DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
-		DirectX::XMVECTOR verticalRotationAxis = DirectX::XMVectorSet(1, 0, 1, 0);
+	DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
+	DirectX::XMVECTOR verticalRotationAxis = DirectX::XMVectorSet(1, 0, 1, 0);
+		
+	float angle = (pDx * 90.0f);
+	float verticalAngle = (pDy * 90.0f);
 
-
-	
-		float angle = (pDx * 90.0f);
-		float verticalAngle = (pDy * 90.0f);
-
-		DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
-	//	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
-		DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle));
-		DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, 1280/960, 0.1f, 100.0f);
-//	DirectX::XMMATRIX world = DirectX::XMMatrixIdentity();
-		DirectX::XMMATRIX worldViewProj = world * view * proj;
+	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
+	DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle));
+	DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, 1280/960, 0.1f, 100.0f);
+	DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
 	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(world));
 	DirectX::XMStoreFloat4x4(&cb2.texTransform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
-
-	//	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixRotationY(0.45f)));
 
 	UINT8* pConstantDataBegin;
 	CD3DX12_RANGE readRange(0, 0);
@@ -194,7 +172,6 @@ void Graphics::Update()
 	ThrowIfFailed(pMaterialConstantBuffer->Map(0, &readRange2, reinterpret_cast<void**>(&pMatConstantDataBegin)));
 	memcpy(pMatConstantDataBegin, &matCB, matConstantBufferByteSize);
 	pMaterialConstantBuffer->Unmap(0, nullptr);
-
 
 	PassConstants lightsCB;
 	lightsCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
@@ -506,41 +483,6 @@ void Graphics::CreateVertexBuffer()
 		DirectX::XMFLOAT2 TexC;
 
 	};
-	/*
-	std::array<Vertex, sizeof(Vertex)> vertices =
-	{
-		Vertex{{DirectX::XMFLOAT3(-0.5f, +0.5f, +0.5f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+0.5f, -0.5f, +0.5f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-0.5f, -0.5f, +0.5f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+0.5f, +0.5f, +0.5f)}, {DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-0.75f, +0.75f, +0.7f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(0.0f, 0.0f, +0.7f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-0.75f, +0.0f, +0.7f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+0.0f, +0.75f, +0.7f)}, {DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f)}}
-	};
-
-	std::array<std::uint16_t, 36> indices
-	{
-		0, 1, 2,
-		0, 3, 1,
-		4, 5, 6,
-		4, 7, 5
-		
-	};
-	*/
-	/*
-	std::array<Vertex, sizeof(Vertex)> vertices =
-	{
-		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT3(-1.0f, -1.0f, -1.0f)}, {DirectX::XMFLOAT2(1.0f, 0.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT3(-1.0f, 1.0f, -1.0f)}, {DirectX::XMFLOAT2(1.0f, 0.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, -1.00f)}, {DirectX::XMFLOAT3(1.0f, 1.0f, -1.0f)}, {DirectX::XMFLOAT2(1.0f, 0.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, -1.00f)}, {DirectX::XMFLOAT3(1.0f, -1.0f, -1.0f)}, {DirectX::XMFLOAT2(1.0f, 0.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT3(-1.0f, -1.0f, 1.0f)}, {DirectX::XMFLOAT2(-1.0f, 0.0f)}},
-		Vertex{{DirectX::XMFLOAT3(-1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT3(-1.0f, 1.0f, 1.0f)}, {DirectX::XMFLOAT2(-1.0f, 0.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, +1.00f, +1.00f)}, {DirectX::XMFLOAT3(1.0f, 1.0f, 1.0f)}},
-		Vertex{{DirectX::XMFLOAT3(+1.00f, -1.00f, +1.00f)}, {DirectX::XMFLOAT3(1.0f, -1.0f, 1.0f)}}
-	};
-	*/
 
 	std::array<Vertex, 24> vertices;
 	float w2 = 1.0f;
@@ -582,59 +524,30 @@ void Graphics::CreateVertexBuffer()
 	vertices[21] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 	vertices[22] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 	vertices[23] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-	/*
-	std::array<std::uint16_t, 36> indices
-	{
-		// front face
-		0, 1, 2,
-		0, 2, 3,
 
-		// back face
-		4, 6, 5,
-		4, 7, 6,
-
-		// left face
-		4, 5, 1,
-		4, 1, 0,
-
-		// right face
-		3, 2, 6,
-		3, 6, 7,
-
-		// top face
-		1, 5, 6,
-		1, 6, 2,
-
-		// bottom face
-		4, 0, 3,
-		4, 3, 7
-
-
-	};
-	*/
 	std::array<UINT32, 36> indices;
 
 	// Fill in the front face index data
 	indices[0] = 0; indices[1] = 1; indices[2] = 2;
 	indices[3] = 0; indices[4] = 2; indices[5] = 3;
 
-	// Findicesll indicesn the back face indicesndex data
+	// Fill in the back face index data
 	indices[6] = 4; indices[7] = 5; indices[8] = 6;
 	indices[9] = 4; indices[10] = 6; indices[11] = 7;
 
-	// Findicesll indicesn the top face indicesndex data
+	// Fill in the top face index data
 	indices[12] = 8; indices[13] = 9; indices[14] = 10;
 	indices[15] = 8; indices[16] = 10; indices[17] = 11;
 
-	// Findicesll indicesn the bottom face indicesndex data
+	// Fill in the bottom face index data
 	indices[18] = 12; indices[19] = 13; indices[20] = 14;
 	indices[21] = 12; indices[22] = 14; indices[23] = 15;
 
-	// Findicesll indicesn the left face indicesndex data
+	// Fill in the left face index data
 	indices[24] = 16; indices[25] = 17; indices[26] = 18;
 	indices[27] = 16; indices[28] = 18; indices[29] = 19;
 
-	// Findicesll indicesn the rindicesght face indicesndex data
+	// Fill in the right face index data
 	indices[30] = 20; indices[31] = 21; indices[32] = 22;
 	indices[33] = 20; indices[34] = 22; indices[35] = 23;
 	
@@ -703,30 +616,16 @@ void Graphics::CreateConstantBuffer()
 
 	ConstantBuffer cb;
 
-//	DirectX::XMVECTOR pos = DirectX::XMVectorSet(0, -10, -10, 1.0f);
-//	DirectX::XMVECTOR target = DirectX::XMVectorSet(0, 0, 0, 1);
-//	DirectX::XMVECTOR up = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
 	DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
-
 	DirectX::XMVECTOR verticalRotationAxis = DirectX::XMVectorSet(1, 0, 1, 0);
-
 
 	float angle = (pDx * 90.0f);
 	float verticalAngle = (pDy * 90.0f);
 
-//	DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(pos, target, up);
-//	DirectX::XMMATRIX world = DirectX::XMMatrixScaling(0.5f, 0.5f, 0.5f) * DirectX::XMMatrixRotationY(0.45f);
 	DirectX::XMMATRIX world = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle));
-//	DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), 1280/960, 0.1f, 100.0f);
-//	DirectX::XMMATRIX world = DirectX::XMMatrixIdentity();
-//	DirectX::XMMATRIX worldViewProj = world * view * proj;
-
 
 	DirectX::XMStoreFloat4x4(&cb.transform, DirectX::XMMatrixTranspose(world));
 	DirectX::XMStoreFloat4x4(&cb.texTransform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
-
-	
 
 	UINT constantBufferByteSize = CalcConstantBufferByteSize(sizeof(ConstantBuffer));
 
@@ -790,7 +689,8 @@ void Graphics::CreateConstantBuffer()
 	memcpy(pMatConstantDataBegin, &matCB, matConstantBufferByteSize);
 	pMaterialConstantBuffer->Unmap(0, nullptr);
 
-	/// Lights cbPass Constant Buffer
+	/// Lights cbPass Constant Buffer /////////
+
 	D3D12_DESCRIPTOR_HEAP_DESC lightsCBHeapDesc = {};
 	lightsCBHeapDesc.NumDescriptors = 1;
 	lightsCBHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -811,29 +711,10 @@ void Graphics::CreateConstantBuffer()
 	DirectX::XMVECTOR viewTarget = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR viewUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-	//	DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
-	//	DirectX::XMVECTOR verticalRotationAxis = DirectX::XMVectorSet(1, 0, 1, 0);
-
-
-	//	float angle = (pDx * 90.0f);
-	//	float verticalAngle = (pDy * 90.0f);
-
-	DirectX::XMMATRIX gWorld = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle));
-
-
-	//	DirectX::XMMATRIX gProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), 1280 / 960, 0.1f, 100.0f);
-
-
-	DirectX::XMMATRIX gProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), 1280 / 960, 1.0f, 100.0f);
-
-
-
 	DirectX::XMMATRIX gView = DirectX::XMMatrixLookAtLH(viewPos, viewTarget, viewUp);
 
 	DirectX::XMStoreFloat3(&lightsCB.eyePosW, viewPos);
 	DirectX::XMStoreFloat4x4(&lightsCB.view, DirectX::XMMatrixTranspose(gView));
-	//	DirectX::XMStoreFloat4x4(&lightsCB.proj, DirectX::XMMatrixTranspose(gProj));
-
 
 	UINT lightConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(PassConstants));
 
@@ -900,12 +781,10 @@ void Graphics::PopulateCommandList()
 	
 	ID3D12DescriptorHeap* descriptorHeaps[] = { pSRVDescriptorHeap.Get() };
 	pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	
 	// Set graphics root signature
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
-	/*
-
-	pCommandList->SetGraphicsRootDescriptorTable(0, pConstantBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-	*/
+	
 	UINT objConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(ConstantBuffer));
 	UINT matConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(MaterialConstants));
 	UINT lightConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(PassConstants));
@@ -947,7 +826,6 @@ void Graphics::PopulateCommandList()
 	// Set resource barrier indicating back buffer is to be used as render target
 	// and Set render target to OM
 	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
 
 	// Record commands into command list
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
@@ -1003,29 +881,6 @@ void Graphics::OnMouseMove(WPARAM buttonState, int x, int y)
 
 		pDx += DirectX::XMConvertToRadians(0.25f * static_cast<float>(x - pLastMousePos.x));
 		pDy += DirectX::XMConvertToRadians(0.25f * static_cast<float>(y - pLastMousePos.y));
-		
-		
-		/*
-		if (x > pLastMousePos.x)
-		{
-		}
-		else if (x < pLastMousePos.x)
-		{
-			pDx = dy;
-		}
-
-		if (y > pLastMousePos.y)
-		{
-			pDy = dt * -1;
-		}
-		else if (y < pLastMousePos.y)
-		{
-			pDy = dt * 1;
-		}
-		*/
-
-
-
 	}
 	else if ((buttonState & MK_RBUTTON) != 0)
 	{

@@ -215,7 +215,7 @@ struct PSInput
 float4 main(PSInput psInput) : SV_TARGET
 {
 	/*
-	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinearWrap, psInput.TexC) * gDiffuseAlbedo;
+	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamPointWrap, psInput.TexC) * gDiffuseAlbedo;
 
 	// Interpolating normal can unnormalize it,
 	// so renormalize it.
@@ -239,5 +239,5 @@ float4 main(PSInput psInput) : SV_TARGET
 	litColour.a = diffuseAlbedo.a;
 	return litColour;
 	*/
-	return gDiffuseMap.Sample(gsamPointWrap, psInput.TexC);
+	return gDiffuseMap.Sample(gsamLinearWrap, psInput.TexC);
 }
