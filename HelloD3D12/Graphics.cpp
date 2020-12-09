@@ -61,18 +61,6 @@ void Graphics::Init(HWND hWnd)
 	// 2) INITIALIZE ASSETS///////
 	//////////////////////////////
 
-	// Create empty root signature
-	CreateRootSignature();
-
-	// Compile shaders
-	CompileShaders();
-
-	// Create Depth Stencil View
-	CreateDepthStencilView();
-
-	// Create input element description to define vertex input layout and
-	// Create pipeline state object description and object
-	CreatePipelineState();
 
 	// Create command list
 	CreateCommandList();
@@ -83,6 +71,9 @@ void Graphics::Init(HWND hWnd)
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(
 		pDevice.Get(), pCommandList.Get(), woodCrateTex->Filename.c_str(),
 		woodCrateTex->Resource, woodCrateTex->UploadHeap));
+
+	// Close command list
+	CloseCommandList();
 
 	// TODO: May need to change num to 3
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
@@ -105,8 +96,20 @@ void Graphics::Init(HWND hWnd)
 
 
 
-	// Close command list
-	CloseCommandList();
+	// Create empty root signature
+	CreateRootSignature();
+
+	// Compile shaders
+	CompileShaders();
+
+	// Create Depth Stencil View
+	CreateDepthStencilView();
+
+	// Create input element description to define vertex input layout and
+	// Create pipeline state object description and object
+	CreatePipelineState();
+
+	
 
 	// Create and load vertex buffers 
 	// and Copy vertices data to vertex buffer
@@ -423,6 +426,7 @@ void Graphics::CreateRootSignature()
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
+
 	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
 	slotRootParameter[1].InitAsConstantBufferView(0);
 	slotRootParameter[2].InitAsConstantBufferView(1);
@@ -505,7 +509,7 @@ void Graphics::CreatePipelineState()
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
 		{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
 	};
 	
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
@@ -544,25 +548,20 @@ void Graphics::CreateVertexBuffer()
 		Vertex(
 			const DirectX::XMFLOAT3& p,
 			const DirectX::XMFLOAT3& n,
-			const DirectX::XMFLOAT3& t,
 			const DirectX::XMFLOAT2& uv) :
 			Position(p),
 			Normal(n),
-			TangentU(t),
 			TexC(uv) {}
 		Vertex(
 			float px, float py, float pz,
 			float nx, float ny, float nz,
-			float tx, float ty, float tz,
 			float u, float v) :
 			Position(px, py, pz),
 			Normal(nx, ny, nz),
-			TangentU(tx, ty, tz),
 			TexC(u, v) {}
 
 		DirectX::XMFLOAT3 Position;
 		DirectX::XMFLOAT3 Normal;
-		DirectX::XMFLOAT3 TangentU;
 		DirectX::XMFLOAT2 TexC;
 
 	};
@@ -608,40 +607,40 @@ void Graphics::CreateVertexBuffer()
 	float d2 = 1.0f;
 	
 	// Fill in the front face vertex data.
-	vertices[0] = Vertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	vertices[1] = Vertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	vertices[2] = Vertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	vertices[3] = Vertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	vertices[0] = Vertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f,  0.0f, 1.0f);
+	vertices[1] = Vertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f,  0.0f, 0.0f);
+	vertices[2] = Vertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f,  1.0f, 0.0f);
+	vertices[3] = Vertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f,  1.0f, 1.0f);
 	
 	// Fill in the back face vertex data.
-	vertices[4] = Vertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-	vertices[5] = Vertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	vertices[6] = Vertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	vertices[7] = Vertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	vertices[4] = Vertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+	vertices[5] = Vertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+	vertices[6] = Vertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	vertices[7] = Vertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
 	
 	// Fill in the top face vertex data.
-	vertices[8] = Vertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	vertices[9] = Vertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	vertices[10] = Vertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	vertices[11] = Vertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	vertices[8] = Vertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+	vertices[9] = Vertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+	vertices[10] = Vertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
+	vertices[11] = Vertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
 	
 	// Fill in the bottom face vertex data.
-	vertices[12] = Vertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-	vertices[13] = Vertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	vertices[14] = Vertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	vertices[15] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	vertices[12] = Vertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f);
+	vertices[13] = Vertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f);
+	vertices[14] = Vertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f);
+	vertices[15] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f);
 	
 	// Fill in the left face vertex data.
-	vertices[16] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
-	vertices[17] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
-	vertices[18] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
-	vertices[19] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
+	vertices[16] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f,0.0f, 1.0f);
+	vertices[17] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f,0.0f, 0.0f);
+	vertices[18] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f,1.0f, 0.0f);
+	vertices[19] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f,1.0f, 1.0f);
 	
 	// Fill in the right face vertex data.
-	vertices[20] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-	vertices[21] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-	vertices[22] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
-	vertices[23] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+	vertices[20] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	vertices[21] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	vertices[22] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	vertices[23] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 	/*
 	std::array<std::uint16_t, 36> indices
 	{
@@ -698,7 +697,7 @@ void Graphics::CreateVertexBuffer()
 	indices[30] = 20; indices[31] = 21; indices[32] = 22;
 	indices[33] = 20; indices[34] = 22; indices[35] = 23;
 	
-	indicesSize = (UINT)sizeof(indices);
+	indicesSize = (UINT)indices.size();
 
 	const UINT vertexBufferSize = sizeof(vertices);
 
@@ -960,9 +959,9 @@ void Graphics::PopulateCommandList()
 	
 	// Set graphics root signature
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
-	/*
-	ID3D12DescriptorHeap* descriptorHeaps[] = { pConstantBufferDescriptorHeap.Get() };
+	ID3D12DescriptorHeap* descriptorHeaps[] = { pSRVDescriptorHeap.Get() };
 	pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	/*
 
 	pCommandList->SetGraphicsRootDescriptorTable(0, pConstantBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 	*/

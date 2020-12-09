@@ -61,7 +61,6 @@ struct VSOutput
 
 VSOutput main(VSInput vsInput)
 {
-
 	VSOutput vsOut = (VSOutput)0.0f;
 
 	// Transform to world space.
@@ -73,7 +72,8 @@ VSOutput main(VSInput vsInput)
 	vsOut.NormalW = mul(vsInput.NormalL, (float3x3)gWorld);
 
 	// Output vertex attributes for interpolation across triangle
-	vsOut.TexC = mul(float4(vsInput.TexC, 0.0f, 1.0f), gTexTransform);
+	//float4 texC = mul(float4(vsInput.TexC, 0.0f, 1.0f), gTexTransform);
+	vsOut.TexC = vsInput.TexC;
 //	vsOut.PosH = posW;
 	vsOut.PosH = mul(posW, gView);
 //	vsOut.PosH = mul(vsOut.PosH, gProj);
