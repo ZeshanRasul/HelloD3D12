@@ -214,7 +214,7 @@ struct PSInput
 
 float4 main(PSInput psInput) : SV_TARGET
 {
-	/*
+	
 	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamPointWrap, psInput.TexC) * gDiffuseAlbedo;
 
 	// Interpolating normal can unnormalize it,
@@ -238,6 +238,6 @@ float4 main(PSInput psInput) : SV_TARGET
 	//Common convention to take alpha from diffuse material.
 	litColour.a = diffuseAlbedo.a;
 	return litColour;
-	*/
-	return gDiffuseMap.Sample(gsamPointWrap, psInput.TexC);
+	
+	//return gDiffuseMap.Sample(gsamPointWrap, psInput.TexC);
 }
