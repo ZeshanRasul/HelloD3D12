@@ -72,10 +72,10 @@ VSOutput main(VSInput vsInput)
 	vsOut.NormalW = mul(vsInput.NormalL, (float3x3)gWorld);
 
 	// Output vertex attributes for interpolation across triangle
-	//float4 texC = mul(float4(vsInput.TexC, 0.0f, 1.0f), gTexTransform);
-	vsOut.TexC = vsInput.TexC;
+//	float4 texC = mul(float4(vsInput.TexC, 0.0f, 1.0f), gTexTransform);
 //	vsOut.PosH = posW;
 	vsOut.PosH = mul(posW, gView);
+	vsOut.TexC = vsInput.TexC;
 //	vsOut.PosH = mul(vsOut.PosH, gProj);
 	return vsOut;
 }

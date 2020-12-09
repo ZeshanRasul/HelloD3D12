@@ -35,11 +35,11 @@ void Graphics::Init(HWND hWnd)
 	// Create the device
 	if (pAdapter == nullptr)
 	{
-		D3D12CreateDevice(pWarpAdapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), &pDevice);
+		D3D12CreateDevice(pWarpAdapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), &pDevice);
 	}
 	else
 	{
-		D3D12CreateDevice(pAdapter.Get(), D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), &pDevice);
+		D3D12CreateDevice(pAdapter.Get(), D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), &pDevice);
 	}
 
 	// Create command queue
@@ -50,6 +50,17 @@ void Graphics::Init(HWND hWnd)
 
 	// Create render target view descriptor heap and depth stencil view descriptor heap
 	CreateRTVDescriptorHeap();
+
+	// TODO: May need to change num to 3
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&srvHeapDesc, __uuidof(ID3D12DescriptorHeap), &pSRVDescriptorHeap));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(pSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+
 
 	// Create frame resources (RTV for each frame)
 	CreateFrameResources();
@@ -72,18 +83,6 @@ void Graphics::Init(HWND hWnd)
 		pDevice.Get(), pCommandList.Get(), woodCrateTex->Filename.c_str(),
 		woodCrateTex->Resource, woodCrateTex->UploadHeap));
 
-	// Close command list
-	CloseCommandList();
-
-	// TODO: May need to change num to 3
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(pDevice->CreateDescriptorHeap(&srvHeapDesc, __uuidof(ID3D12DescriptorHeap), &pSRVDescriptorHeap));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(pSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDesc.Format = woodCrateTex->Resource->GetDesc().Format;
@@ -93,11 +92,12 @@ void Graphics::Init(HWND hWnd)
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 
 	pDevice->CreateShaderResourceView(woodCrateTex->Resource.Get(), &srvDesc, hDescriptor);
-
-
-
 	// Create empty root signature
 	CreateRootSignature();
+
+
+
+
 
 	// Compile shaders
 	CompileShaders();
@@ -118,12 +118,19 @@ void Graphics::Init(HWND hWnd)
 
 	// Build materials for use in material constant buffer 
 	BuildMaterials();
-
 	CreateConstantBuffer();
+
+	
+	CreateFence();
+
+	CloseCommandList();
+	ID3D12CommandList* ppCommandLists[] = { pCommandList.Get() };
+	pCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// Close command list
 
 	// Create fence 	
 	// and Create event handle
-	CreateFence();
 
 	// Wait for GPU to complete (check on fence)
 	WaitForPreviousFrame();
@@ -200,30 +207,15 @@ void Graphics::Update()
 	DirectX::XMVECTOR viewTarget = DirectX::XMVectorSet(0, 0, 0, 1);
 	DirectX::XMVECTOR viewUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-//	DirectX::XMVECTOR rotationAxis = DirectX::XMVectorSet(0, 1, 1, 0);
-//	DirectX::XMVECTOR verticalRotationAxis = DirectX::XMVectorSet(1, 0, 1, 0);
-
-
-//	float angle = (pDx * 90.0f);
-//	float verticalAngle = (pDy * 90.0f);
-
 	DirectX::XMMATRIX gWorld = DirectX::XMMatrixRotationAxis(rotationAxis, DirectX::XMConvertToRadians(angle)) * DirectX::XMMatrixRotationAxis(verticalRotationAxis, DirectX::XMConvertToRadians(verticalAngle));
 
-
-//	DirectX::XMMATRIX gProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), 1280 / 960, 0.1f, 100.0f);
-
-	
 	DirectX::XMMATRIX gProj = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), 1280 / 960, 1.0f, 100.0f);
-
-
 
 	DirectX::XMMATRIX gView = DirectX::XMMatrixLookAtLH(viewPos, viewTarget, viewUp);
 
 	DirectX::XMMATRIX gViewProj = gView * gProj;
 	DirectX::XMStoreFloat3(&lightsCB.eyePosW, viewPos);
 	DirectX::XMStoreFloat4x4(&lightsCB.view, DirectX::XMMatrixTranspose(gViewProj));
-//	DirectX::XMStoreFloat4x4(&lightsCB.proj, DirectX::XMMatrixTranspose(gProj));
-
 
 	UINT lightConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(PassConstants));
 
@@ -390,38 +382,6 @@ void Graphics::CreateFrameResources()
 
 void Graphics::CreateRootSignature()
 {
-	/*
-	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[2];
-	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[0].NumDescriptors = 1;
-	descriptorTableRanges[0].BaseShaderRegister = 0;
-	descriptorTableRanges[0].RegisterSpace = 0;
-	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	descriptorTableRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorTableRanges[1].NumDescriptors = 1;
-	descriptorTableRanges[1].BaseShaderRegister = 0;
-	descriptorTableRanges[1].RegisterSpace = 0;
-	descriptorTableRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-
-
-	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
-	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges);
-	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
-
-	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable2;
-	descriptorTable2.NumDescriptorRanges = _countof(descriptorTableRanges2);
-	descriptorTable2.pDescriptorRanges = &descriptorTableRanges2[0];
-
-	D3D12_ROOT_PARAMETER rootParameters[2];
-	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[0].DescriptorTable = descriptorTable;
-	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParameters[1].DescriptorTable = descriptorTable2;
-	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-
-	*/
-
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
@@ -467,21 +427,6 @@ void Graphics::CreateDepthStencilView()
 	depthOptimizedClearValue.DepthStencil.Depth = 1.0f;
 	depthOptimizedClearValue.DepthStencil.Stencil = 0;
 
-	/*
-	D3D12_RESOURCE_DESC depthStencilDesc = {};
-	depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
-	depthStencilDesc.Alignment = 0;
-	depthStencilDesc.Width = 1280;
-	depthStencilDesc.Height = 960;
-	depthStencilDesc.DepthOrArraySize = 1;
-	depthStencilDesc.MipLevels = 1;
-	depthStencilDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	depthStencilDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	depthStencilDesc.SampleDesc.Count = 1;
-	depthStencilDesc.SampleDesc.Quality = 0;
-	depthStencilDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-	*/
-
 	ThrowIfFailed(pDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
 		D3D12_HEAP_FLAG_NONE,
@@ -494,13 +439,7 @@ void Graphics::CreateDepthStencilView()
 	pDSVDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
 
 	pDevice->CreateDepthStencilView(pDepthStencilView.Get(), &depthStencilViewDesc, pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	/*
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Format = DXGI_FORMAT_D32_FLOAT;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	pDevice->CreateShaderResourceView(&pShaderResourceView, &srvDesc, )
-	*/
+
 }
 
 void Graphics::CreatePipelineState()
@@ -631,10 +570,10 @@ void Graphics::CreateVertexBuffer()
 	vertices[15] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f);
 	
 	// Fill in the left face vertex data.
-	vertices[16] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f,0.0f, 1.0f);
-	vertices[17] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f,0.0f, 0.0f);
-	vertices[18] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f,1.0f, 0.0f);
-	vertices[19] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f,1.0f, 1.0f);
+	vertices[16] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	vertices[17] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	vertices[18] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	vertices[19] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 	
 	// Fill in the right face vertex data.
 	vertices[20] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -957,10 +896,10 @@ void Graphics::PopulateCommandList()
 	// Reset command list
 	ThrowIfFailed(pCommandList->Reset(pCommandAllocator.Get(), pPipelineState.Get()));
 	
-	// Set graphics root signature
-	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
 	ID3D12DescriptorHeap* descriptorHeaps[] = { pSRVDescriptorHeap.Get() };
 	pCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
+	// Set graphics root signature
+	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
 	/*
 
 	pCommandList->SetGraphicsRootDescriptorTable(0, pConstantBufferDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
@@ -1111,7 +1050,7 @@ void Graphics::OnMouseUp()
 {
 }
 
-std::array<CD3DX12_STATIC_SAMPLER_DESC, 1> Graphics::GetStaticSamplers()
+std::array<CD3DX12_STATIC_SAMPLER_DESC, 2> Graphics::GetStaticSamplers()
 {
 	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
 		0,
@@ -1121,7 +1060,14 @@ std::array<CD3DX12_STATIC_SAMPLER_DESC, 1> Graphics::GetStaticSamplers()
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP
 	);
 
-	return { pointWrap };
+	const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
+		1, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+	return { pointWrap, linearWrap };
 }
 
 

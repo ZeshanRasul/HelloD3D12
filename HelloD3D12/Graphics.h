@@ -148,7 +148,7 @@ public:
 
 	void BuildMaterials();
 
-	std::array<CD3DX12_STATIC_SAMPLER_DESC, 1> GetStaticSamplers();
+	std::array<CD3DX12_STATIC_SAMPLER_DESC, 2> GetStaticSamplers();
 
 public:
 	class DxException

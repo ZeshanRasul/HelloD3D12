@@ -202,6 +202,7 @@ cbuffer cbPass : register (b2)
 Texture2D gDiffuseMap : register(t0);
 
 SamplerState gsamPointWrap : register(s0);
+SamplerState gsamLinearWrap : register(s1);
 
 struct PSInput
 {
@@ -213,9 +214,10 @@ struct PSInput
 
 float4 main(PSInput psInput) : SV_TARGET
 {
-	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamPointWrap, psInput.TexC) * gDiffuseAlbedo;
+	/*
+	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamLinearWrap, psInput.TexC) * gDiffuseAlbedo;
 
-	// Interpolating normal can unnormalize it, 
+	// Interpolating normal can unnormalize it,
 	// so renormalize it.
 	psInput.NormalW = normalize(psInput.NormalW);
 
@@ -235,6 +237,7 @@ float4 main(PSInput psInput) : SV_TARGET
 
 	//Common convention to take alpha from diffuse material.
 	litColour.a = diffuseAlbedo.a;
-
 	return litColour;
+	*/
+	return gDiffuseMap.Sample(gsamPointWrap, psInput.TexC);
 }
