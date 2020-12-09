@@ -70,7 +70,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\VertexShader.hlsl" />
     <FxCompile Include="Shaders\PixelShader.hlsl" />
+    <FxCompile Include="Shaders\VertexShader.hlsl" />
   </ItemGroup>
 </Project>

@@ -63,33 +63,35 @@ void Graphics::Init(HWND hWnd)
 
 	// Create command list
 	CreateCommandList();
-
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(pDevice->CreateDescriptorHeap(&srvHeapDesc, __uuidof(ID3D12DescriptorHeap), &pSRVDescriptorHeap));
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(pSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
+	CloseCommandList();
+	pCommandList->Reset(pCommandAllocator.Get(), nullptr);
 	auto woodCrateTex = std::make_unique<Texture>();
 	woodCrateTex->Name = "woodCrateTex";
 	woodCrateTex->Filename = L"Textures/WoodCrate01.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(
 		pDevice.Get(), pCommandList.Get(), woodCrateTex->Filename.c_str(),
 		woodCrateTex->Resource, woodCrateTex->UploadHeap));
+	// Create empty root signature
+	CreateRootSignature();
+
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&pSRVDescriptorHeap)));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(pSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+	woodTexResource = woodCrateTex->Resource;
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = woodCrateTex->Resource->GetDesc().Format;
+	srvDesc.Format = woodTexResource->GetDesc().Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = woodCrateTex->Resource->GetDesc().MipLevels;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	srvDesc.Texture2D.MipLevels = woodTexResource->GetDesc().MipLevels;
 
-	pDevice->CreateShaderResourceView(woodCrateTex->Resource.Get(), &srvDesc, hDescriptor);
-	// Create empty root signature
-	CreateRootSignature();
+	pDevice->CreateShaderResourceView(woodTexResource.Get(), &srvDesc, pSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	// Compile shaders
 	CompileShaders();
@@ -97,9 +99,6 @@ void Graphics::Init(HWND hWnd)
 	// Create Depth Stencil View
 	CreateDepthStencilView();
 
-	// Create input element description to define vertex input layout and
-	// Create pipeline state object description and object
-	CreatePipelineState();
 
 	// Create and load vertex buffers 
 	// and Copy vertices data to vertex buffer
@@ -109,6 +108,9 @@ void Graphics::Init(HWND hWnd)
 	// Build materials for use in material constant buffer 
 	BuildMaterials();
 	CreateConstantBuffer();
+	// Create input element description to define vertex input layout and
+	// Create pipeline state object description and object
+	CreatePipelineState();
 
 	// Create fence 	
 	// and Create event handle
@@ -361,19 +363,36 @@ void Graphics::CreateFrameResources()
 
 void Graphics::CreateRootSignature()
 {
+	/*
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	*/
+
+	D3D12_DESCRIPTOR_RANGE descriptorTableRanges[1];
+	descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	descriptorTableRanges[0].NumDescriptors = 1;
+	descriptorTableRanges[0].BaseShaderRegister = 0;
+	descriptorTableRanges[0].RegisterSpace = 0;
+	descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+	descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges);
+	descriptorTable.pDescriptorRanges = &descriptorTableRanges[0];
 
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+//  slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
+	
+	slotRootParameter[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	slotRootParameter[0].DescriptorTable = descriptorTable;
+	slotRootParameter[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 	slotRootParameter[1].InitAsConstantBufferView(0);
 	slotRootParameter[2].InitAsConstantBufferView(1);
 	slotRootParameter[3].InitAsConstantBufferView(2);
 
 	auto staticSamplers = GetStaticSamplers();
 
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(4, slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(_countof(slotRootParameter), slotRootParameter, (UINT)staticSamplers.size(), staticSamplers.data(), D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 	Microsoft::WRL::ComPtr<ID3DBlob> signature;
 	Microsoft::WRL::ComPtr<ID3DBlob> error;
@@ -792,12 +811,12 @@ void Graphics::PopulateCommandList()
 	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = pConstantBuffer->GetGPUVirtualAddress();
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(pSRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	pCommandList->SetGraphicsRootDescriptorTable(0, tex);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), pFrameIndex, pRTVDescriptorSize);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE pDSVHandle(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	pCommandList->ClearDepthStencilView(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	pCommandList->SetGraphicsRootDescriptorTable(0, pSRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 	pCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
 
@@ -907,7 +926,7 @@ void Graphics::OnMouseUp()
 {
 }
 
-std::array<CD3DX12_STATIC_SAMPLER_DESC, 6> Graphics::GetStaticSamplers()
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Graphics::GetStaticSamplers()
 {
 	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
 		0, // shaderRegister

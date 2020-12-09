@@ -148,7 +148,7 @@ public:
 
 	void BuildMaterials();
 
-	std::array<CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
+	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
 public:
 	class DxException
@@ -196,6 +196,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> pConstantBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pMaterialConstantBuffer;
 	Microsoft::WRL::ComPtr<ID3D12Resource> pLightsConstantBuffer;
+	Microsoft::WRL::ComPtr<ID3D12Resource> woodTexResource;
 	Microsoft::WRL::ComPtr<ID3D12Fence> pFence;
 
 	D3D12_VIEWPORT pVP;

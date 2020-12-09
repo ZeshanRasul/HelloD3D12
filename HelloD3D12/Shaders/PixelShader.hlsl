@@ -239,5 +239,5 @@ float4 main(PSInput psInput) : SV_TARGET
 	litColour.a = diffuseAlbedo.a;
 	return litColour;
 	*/
-	return gDiffuseMap.Sample(gsamLinearWrap, psInput.TexC);
+	return gDiffuseMap.Sample(gsamPointWrap, psInput.TexC);
 }
