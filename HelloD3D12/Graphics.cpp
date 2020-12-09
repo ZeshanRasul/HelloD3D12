@@ -52,13 +52,7 @@ void Graphics::Init(HWND hWnd)
 	CreateRTVDescriptorHeap();
 
 	// TODO: May need to change num to 3
-	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
-	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	ThrowIfFailed(pDevice->CreateDescriptorHeap(&srvHeapDesc, __uuidof(ID3D12DescriptorHeap), &pSRVDescriptorHeap));
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(pSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 
 
@@ -75,6 +69,14 @@ void Graphics::Init(HWND hWnd)
 
 	// Create command list
 	CreateCommandList();
+
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	ThrowIfFailed(pDevice->CreateDescriptorHeap(&srvHeapDesc, __uuidof(ID3D12DescriptorHeap), &pSRVDescriptorHeap));
+
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(pSRVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	auto woodCrateTex = std::make_unique<Texture>();
 	woodCrateTex->Name = "woodCrateTex";
@@ -383,7 +385,7 @@ void Graphics::CreateFrameResources()
 void Graphics::CreateRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0, 0);
 
 	CD3DX12_ROOT_PARAMETER slotRootParameter[4];
 
@@ -911,8 +913,12 @@ void Graphics::PopulateCommandList()
 	D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = pConstantBuffer->GetGPUVirtualAddress();
 
 	CD3DX12_GPU_DESCRIPTOR_HANDLE tex(pSRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), pFrameIndex, pRTVDescriptorSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE pDSVHandle(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	pCommandList->ClearDepthStencilView(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
+	pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	pCommandList->SetGraphicsRootDescriptorTable(0, tex);
+	pCommandList->SetGraphicsRootDescriptorTable(0, pSRVDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 	pCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
 
@@ -942,10 +948,6 @@ void Graphics::PopulateCommandList()
 	// and Set render target to OM
 	pCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(pRenderTargets[pFrameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(pRTVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), pFrameIndex, pRTVDescriptorSize);
-	CD3DX12_CPU_DESCRIPTOR_HANDLE pDSVHandle(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	pCommandList->ClearDepthStencilView(pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
-	pCommandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &pDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 	// Record commands into command list
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
@@ -1050,24 +1052,58 @@ void Graphics::OnMouseUp()
 {
 }
 
-std::array<CD3DX12_STATIC_SAMPLER_DESC, 2> Graphics::GetStaticSamplers()
+std::array<CD3DX12_STATIC_SAMPLER_DESC, 6> Graphics::GetStaticSamplers()
 {
 	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
-		0,
-		D3D12_FILTER_MIN_MAG_MIP_POINT,
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		D3D12_TEXTURE_ADDRESS_MODE_WRAP
-	);
+		0, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC pointClamp(
+		1, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
 
 	const CD3DX12_STATIC_SAMPLER_DESC linearWrap(
-		1, // shaderRegister
+		2, // shaderRegister
 		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
 		D3D12_TEXTURE_ADDRESS_MODE_WRAP); // addressW
 
-	return { pointWrap, linearWrap };
+	const CD3DX12_STATIC_SAMPLER_DESC linearClamp(
+		3, // shaderRegister
+		D3D12_FILTER_MIN_MAG_MIP_LINEAR, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // addressW
+
+	const CD3DX12_STATIC_SAMPLER_DESC anisotropicWrap(
+		4, // shaderRegister
+		D3D12_FILTER_ANISOTROPIC, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,  // addressW
+		0.0f,                             // mipLODBias
+		8);                               // maxAnisotropy
+
+	const CD3DX12_STATIC_SAMPLER_DESC anisotropicClamp(
+		5, // shaderRegister
+		D3D12_FILTER_ANISOTROPIC, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,  // addressW
+		0.0f,                              // mipLODBias
+		8);                                // maxAnisotropy
+
+	return {
+		pointWrap, pointClamp,
+		linearWrap, linearClamp,
+		anisotropicWrap, anisotropicClamp };
 }
 
 
