@@ -650,7 +650,7 @@ void Graphics::CreateVertexBuffer()
 	UINT8* pIndexDataBegin;
 	CD3DX12_RANGE readRange1(0, 0);
 	ThrowIfFailed(pIndexBuffer->Map(0, &readRange1, reinterpret_cast<void**>(&pIndexDataBegin)));
-	memcpy(pIndexDataBegin, indices.data(), sizeof(indices));
+	memcpy(pIndexDataBegin, indices.data(), indexBufferByteSize);
 	pIndexBuffer->Unmap(0, nullptr);
 
 	pIndexBufferView.BufferLocation = pIndexBuffer->GetGPUVirtualAddress();
