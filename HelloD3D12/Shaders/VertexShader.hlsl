@@ -64,9 +64,8 @@ VSOutput main(VSInput vsInput)
 	VSOutput vsOut = (VSOutput)0.0f;
 
 	// Transform to world space.
-//	float4 posW = mul(float4(vsInput.PosL, 1.0f), gWorld);
-	vsOut.PosH = float4(vsInput.PosL, 1.0f);
-	vsOut.PosW = vsOut.PosH.xyz;
+	float4 posW = mul(float4(vsInput.PosL, 1.0f), gWorld);
+	vsOut.PosW = posW.xyz;
 
 	// Assumes nonuniform scaling; otherwise, need to 
 	// use inverse-transpose of world matrix.
@@ -75,7 +74,7 @@ VSOutput main(VSInput vsInput)
 	// Output vertex attributes for interpolation across triangle
 //	float4 texC = mul(float4(vsInput.TexC, 0.0f, 1.0f), gTexTransform);
 //	vsOut.PosH = posW;
-//	vsOut.PosH = mul(posW, gView);
+	vsOut.PosH = mul(posW, gView);
 //	vsOut.TexC = vsInput.TexC;
 //	vsOut.PosH = mul(vsOut.PosH, gProj);
 	return vsOut;
