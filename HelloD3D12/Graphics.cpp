@@ -153,7 +153,7 @@ void Graphics::Update()
 	//DirectX::XMMATRIX proj = DirectX::XMMatrixPerspectiveFovLH(0.25f * DirectX::XM_PI, 1280/960, 0.1f, 100.0f);
 	//DirectX::XMMATRIX worldViewProj = world * view * proj;
 	
-	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
+	DirectX::XMStoreFloat4x4(&cb2.transform, DirectX::XMMatrixTranspose(DirectX::XMMatrixTranslation(0.0f, -3.0f, 0.0f)));
 	DirectX::XMStoreFloat4x4(&cb2.texTransform, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
 
 	UINT8* pConstantDataBegin;
@@ -189,7 +189,7 @@ void Graphics::Update()
 	pEyePos.z = pRadius * sinf(pPhi) * sinf(pTheta);
 	pEyePos.y = pRadius * cosf(pPhi);
 
-	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(0, 0, 0, 1.0f);
+	DirectX::XMVECTOR viewPos = DirectX::XMVectorSet(pEyePos.x, pEyePos.y, pEyePos.z, 1.0f);
 	DirectX::XMVECTOR viewTarget = DirectX::XMVectorZero();
 	DirectX::XMVECTOR viewUp = DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
@@ -197,11 +197,11 @@ void Graphics::Update()
 
 	DirectX::XMMATRIX gProj = DirectX::XMMatrixPerspectiveFovLH(0.25 * DirectX::XM_PI, 1280 / 960, 1.0f, 100.0f);
 
-//	DirectX::XMMATRIX gView = DirectX::XMMatrixLookAtLH(viewPos, viewTarget, viewUp);
+	DirectX::XMMATRIX gView = DirectX::XMMatrixLookAtLH(viewPos, viewTarget, viewUp);
 
-//	DirectX::XMMATRIX gViewProj = DirectX::XMMatrixMultiply(gView, gProj);
+	DirectX::XMMATRIX gViewProj = DirectX::XMMatrixMultiply(gView, gProj);
 	DirectX::XMStoreFloat3(&lightsCB.eyePosW, viewPos);
-	DirectX::XMStoreFloat4x4(&lightsCB.view, DirectX::XMMatrixTranspose(DirectX::XMMatrixIdentity()));
+	DirectX::XMStoreFloat4x4(&lightsCB.view, DirectX::XMMatrixTranspose(gViewProj));
 
 	UINT lightConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(PassConstants));
 
