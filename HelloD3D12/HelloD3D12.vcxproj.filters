@@ -73,4 +73,7 @@
     <FxCompile Include="Shaders\PixelShader.hlsl" />
     <FxCompile Include="Shaders\VertexShader.hlsl" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="Models\skull.txt" />
+  </ItemGroup>
 </Project>

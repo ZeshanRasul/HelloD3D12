@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include "DDSTextureLoader.h"
+#include <fstream>
 
 Graphics::Graphics()
 	:
@@ -162,10 +163,10 @@ void Graphics::Update()
 	pConstantBuffer->Unmap(0, nullptr);
 
 	MaterialConstants matCB;
-	matCB.DiffuseAlbedo = pMaterials["cube"]->DiffuseAlbedo;
-	matCB.FresnelR0 = pMaterials["cube"]->FresnelR0;
-	matCB.MaterialTransform = pMaterials["cube"]->MaterialTransform;
-	matCB.Roughness = pMaterials["cube"]->Roughness;
+	matCB.DiffuseAlbedo = pMaterials["skull"]->DiffuseAlbedo;
+	matCB.FresnelR0 = pMaterials["skull"]->FresnelR0;
+	matCB.MaterialTransform = pMaterials["skull"]->MaterialTransform;
+	matCB.Roughness = pMaterials["skull"]->Roughness;
 
 	UINT matConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(MaterialConstants));
 
@@ -502,7 +503,7 @@ void Graphics::CreateVertexBuffer()
 		DirectX::XMFLOAT2 TexC;
 
 	};
-
+	/*
 	std::array<Vertex, 24> vertices;
 	float w2 = 1.0f;
 	float h2 = 1.0f;
@@ -569,14 +570,47 @@ void Graphics::CreateVertexBuffer()
 	// Fill in the right face index data
 	indices[30] = 20; indices[31] = 21; indices[32] = 22;
 	indices[33] = 20; indices[34] = 22; indices[35] = 23;
-	
-	indicesSize = (UINT)indices.size();
+	*/
 
-	const UINT vertexBufferSize = sizeof(vertices);
+	std::ifstream fin("Models/skull.txt");
+
+	if (!fin)
+	{
+		MessageBox(0, "Models/skull.txt not found.", 0, 0);
+		return;
+	}
+
+	UINT vcount = 0;
+	UINT tcount = 0;
+	std::string ignore;
+
+	fin >> ignore >> vcount;
+	fin >> ignore >> tcount;
+	fin >> ignore >> ignore >> ignore >> ignore;
+
+	std::vector<Vertex> vertices(vcount);
+
+	for (UINT i = 0; i < vcount; i++)
+	{
+		fin >> vertices[i].Position.x >> vertices[i].Position.y >> vertices[i].Position.z;
+		fin >> vertices[i].Normal.x >> vertices[i].Normal.y >> vertices[i].Normal.z;
+	}
+
+	std::vector<int32_t> indices(3 * tcount);
+	for (UINT i = 0; i < tcount; i++)
+	{ 
+		fin >> indices[i * 3 + 0] >> indices[i * 3 + 1] >> indices[i * 3 + 2];
+	}
+
+	fin.close();
+
+	indicesSize = indices.size();
+
+	const UINT vertexBufferByteSize = vertices.size() * sizeof(Vertex);
 
 	ThrowIfFailed(pDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferByteSize),
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
 		__uuidof(ID3D12Resource), &pVertexBuffer));
 
@@ -587,14 +621,14 @@ void Graphics::CreateVertexBuffer()
 	pVertexBuffer->Unmap(0, nullptr);
 
 	pVertexBufferView.BufferLocation = pVertexBuffer->GetGPUVirtualAddress();
-	pVertexBufferView.SizeInBytes = vertexBufferSize;
+	pVertexBufferView.SizeInBytes = vertexBufferByteSize;
 	pVertexBufferView.StrideInBytes = sizeof(Vertex);
 
-	const UINT indexBufferSize = sizeof(indices);
+	const UINT indexBufferByteSize = (UINT)indices.size() * sizeof(int32_t);
 
 	ThrowIfFailed(pDevice->CreateCommittedResource(
 		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize),
+		D3D12_HEAP_FLAG_NONE, &CD3DX12_RESOURCE_DESC::Buffer(indexBufferByteSize),
 		D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
 		__uuidof(ID3D12Resource), &pIndexBuffer));
 
@@ -605,20 +639,20 @@ void Graphics::CreateVertexBuffer()
 	pIndexBuffer->Unmap(0, nullptr);
 
 	pIndexBufferView.BufferLocation = pIndexBuffer->GetGPUVirtualAddress();
-	pIndexBufferView.SizeInBytes = indexBufferSize;
+	pIndexBufferView.SizeInBytes = indexBufferByteSize;
 	pIndexBufferView.Format = DXGI_FORMAT_R32_UINT;
 }
 
 void Graphics::BuildMaterials()
 {
 	auto cubeMaterial = std::make_unique<Material>();
-	cubeMaterial->Name = "cube";
+	cubeMaterial->Name = "skull";
 	cubeMaterial->MaterialCBIndex = 0;
-	cubeMaterial->DiffuseAlbedo = DirectX::XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
-	cubeMaterial->FresnelR0 = DirectX::XMFLOAT3(0.1f, 0.1f, 0.1f);
-	cubeMaterial->Roughness = 0.0f;
+	cubeMaterial->DiffuseAlbedo = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	cubeMaterial->FresnelR0 = DirectX::XMFLOAT3(0.05f, 0.05f, 0.05f);
+	cubeMaterial->Roughness = 0.3f;
 
-	pMaterials["cube"] = std::move(cubeMaterial);
+	pMaterials["skull"] = std::move(cubeMaterial);
 }
 
 
@@ -680,10 +714,10 @@ void Graphics::CreateConstantBuffer()
 	ThrowIfFailed(pDevice->CreateDescriptorHeap(&matCBHeapDesc, __uuidof(ID3D12DescriptorHeap), &pMatCBufDescriptorHeap));
 	
 	MaterialConstants matCB;
-	matCB.DiffuseAlbedo = pMaterials["cube"]->DiffuseAlbedo;
-	matCB.FresnelR0 = pMaterials["cube"]->FresnelR0;
-	matCB.MaterialTransform = pMaterials["cube"]->MaterialTransform;
-	matCB.Roughness = pMaterials["cube"]->Roughness;
+	matCB.DiffuseAlbedo = pMaterials["skull"]->DiffuseAlbedo;
+	matCB.FresnelR0 = pMaterials["skull"]->FresnelR0;
+	matCB.MaterialTransform = pMaterials["skull"]->MaterialTransform;
+	matCB.Roughness = pMaterials["skull"]->Roughness;
 
 	UINT matConstantBufferByteSize = CalcConstantBufferByteSize(sizeof(MaterialConstants));
 
@@ -820,7 +854,7 @@ void Graphics::PopulateCommandList()
 
 	pCommandList->SetGraphicsRootConstantBufferView(1, objCBAddress);
 
-	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = pMaterialConstantBuffer->GetGPUVirtualAddress() + pMaterials["cube"]->MaterialCBIndex * matConstantBufferByteSize;
+	D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = pMaterialConstantBuffer->GetGPUVirtualAddress() + pMaterials["skull"]->MaterialCBIndex * matConstantBufferByteSize;
 	pCommandList->SetGraphicsRootConstantBufferView(2, matCBAddress);
 
 	D3D12_GPU_VIRTUAL_ADDRESS lightsCBAddress = pLightsConstantBuffer->GetGPUVirtualAddress();

@@ -215,7 +215,7 @@ struct PSInput
 float4 main(PSInput psInput) : SV_TARGET
 {
 	
-	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamPointWrap, psInput.TexC) * gDiffuseAlbedo;
+//	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamPointWrap, psInput.TexC) * gDiffuseAlbedo;
 
 	// Interpolating normal can unnormalize it,
 	// so renormalize it.
@@ -225,18 +225,18 @@ float4 main(PSInput psInput) : SV_TARGET
 	float3 toEyeW = normalize(gEyePosW - psInput.PosW);
 
 	// Indirect lighting.
-	float4 ambient = gAmbientLight * diffuseAlbedo;
+	float4 ambient = gAmbientLight * gDiffuseAlbedo;
 
 	// Direct lighting.
 	const float shininess = 1.0f - gRoughness;
-	Material mat = { diffuseAlbedo, gFresnelR0, shininess };
+	Material mat = { gDiffuseAlbedo, gFresnelR0, shininess };
 	float3 shadowFactor = 1.0f;
 	float4 directLight = ComputeLighting(gLights, mat, psInput.PosW, psInput.NormalW, toEyeW, shadowFactor);
 
 	float4 litColour = ambient + directLight;
 
 	//Common convention to take alpha from diffuse material.
-	litColour.a = diffuseAlbedo.a;
+	litColour.a = gDiffuseAlbedo.a;
 	return litColour;
 	
 	//return gDiffuseMap.Sample(gsamPointWrap, psInput.TexC);
