@@ -587,7 +587,7 @@ void Graphics::CreateVertexBuffer()
 
 	if (!fin)
 	{
-		MessageBox(0, "Models/skull.txt not found.", 0, 0);
+		MessageBox(0, L"Models/skull.txt not found.", 0, 0);
 		return;
 	}
 

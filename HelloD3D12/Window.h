@@ -30,14 +30,14 @@ private:
 	class WindowClass
 	{
 	public:
-		static const LPCSTR GetName();
+		static const wchar_t* GetName();
 		static HINSTANCE GetInstance();
 
 	private:
 		WindowClass();
 		~WindowClass();
 
-		static constexpr const LPCSTR wndClassName = "Windows Framework";
+		static constexpr const wchar_t* wndClassName = L"Windows Framework";
 		static WindowClass wndClass;
 		HINSTANCE hInstance;
 	};

@@ -16,7 +16,7 @@ Window::WindowClass::WindowClass()
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = GetInstance();
-	wc.hIcon = nullptr;
+	wc.hIcon = LoadIcon(0, IDI_APPLICATION);
 	wc.hCursor = LoadCursor(0, IDC_ARROW);
 	wc.hbrBackground = nullptr;
 	wc.lpszMenuName = nullptr;
@@ -31,7 +31,7 @@ Window::WindowClass::~WindowClass()
 	UnregisterClass(wndClassName, GetInstance());
 }
 
-const LPCSTR Window::WindowClass::GetName()
+const wchar_t* Window::WindowClass::GetName()
 {
 	return wndClassName;
 }
@@ -64,7 +64,7 @@ void Window::Init(const WindowProps& props)
 	wr.bottom = m_Data.Height + wr.top;
 	AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU, FALSE);
 
-	LPCSTR pWindowName = "Windows Framework Window";
+	LPCWSTR pWindowName = L"Windows Framework Window";
 
 	HWND m_Hwnd = CreateWindowEx(
 		0, WindowClass::GetName(),
@@ -74,10 +74,11 @@ void Window::Init(const WindowProps& props)
 		nullptr, nullptr, WindowClass::GetInstance(), this
 	);
 
+	ShowWindow(m_Hwnd, SW_SHOW);
+	UpdateWindow(m_Hwnd);
 	m_Graphics = new Graphics();
 	m_Graphics->Init(m_Hwnd);
 
-	ShowWindow(m_Hwnd, SW_SHOWDEFAULT);
 
 	SetVSync(true);
 }
@@ -236,6 +237,8 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		if (pt.x >= 0 && pt.x <= (int)m_Data.Width && pt.y >= 0 && pt.y <= (int)m_Data.Height)
 		{
+			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
+			SetCursor(cursor);
 			input.OnMouseMove(pt.x, pt.y);
 
 			Window* const p_Wnd = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -403,7 +406,7 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	}
-	}
 
+	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
