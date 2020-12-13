@@ -76,6 +76,8 @@ void Window::Init(const WindowProps& props)
 
 	ShowWindow(m_Hwnd, SW_SHOW);
 	UpdateWindow(m_Hwnd);
+	HCURSOR cursor = LoadCursor(0, IDC_ARROW);
+	SetCursor(cursor);
 	m_Graphics = new Graphics();
 	m_Graphics->Init(m_Hwnd);
 
@@ -237,8 +239,6 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		if (pt.x >= 0 && pt.x <= (int)m_Data.Width && pt.y >= 0 && pt.y <= (int)m_Data.Height)
 		{
-			HCURSOR cursor = LoadCursor(0, IDC_ARROW);
-			SetCursor(cursor);
 			input.OnMouseMove(pt.x, pt.y);
 
 			Window* const p_Wnd = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
