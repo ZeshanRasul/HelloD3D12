@@ -3,6 +3,7 @@
 #include <optional>
 #include "Events/Event.h"
 #include "Input.h"
+#include "Graphics.h"
 
 struct WindowProps
 {
@@ -55,7 +56,9 @@ public:
 	bool IsVSync() const;
 	static std::optional<int> ProcessMessages();
 
-	inline virtual void* GetNativeWindow() const { return m_Window; }
+	inline void* GetNativeWindow() const { return m_Window; }
+
+	inline Graphics& GetGraphics() const { return *m_Graphics; }
 
 private:
 	struct WindowData
@@ -83,5 +86,7 @@ private:
 	WindowData m_Data;
 
 	HWND m_Hwnd;
+
+	Graphics* m_Graphics;
 
 };

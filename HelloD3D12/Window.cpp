@@ -16,7 +16,7 @@ Window::WindowClass::WindowClass()
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = GetInstance();
-	wc.hIcon = nullptr;
+	wc.hIcon = LoadIcon(0, IDI_APPLICATION);
 	wc.hCursor = LoadCursor(0, IDC_ARROW);
 	wc.hbrBackground = nullptr;
 	wc.lpszMenuName = nullptr;
@@ -64,7 +64,7 @@ void Window::Init(const WindowProps& props)
 	wr.bottom = m_Data.Height + wr.top;
 	AdjustWindowRect(&wr, WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU, FALSE);
 
-	const wchar_t* pWindowName = L"Windows Framework Window";
+	LPCWSTR pWindowName = L"Windows Framework Window";
 
 	HWND m_Hwnd = CreateWindowEx(
 		0, WindowClass::GetName(),
@@ -74,13 +74,20 @@ void Window::Init(const WindowProps& props)
 		nullptr, nullptr, WindowClass::GetInstance(), this
 	);
 
-	ShowWindow(m_Hwnd, SW_SHOWDEFAULT);
+	ShowWindow(m_Hwnd, SW_SHOW);
+	UpdateWindow(m_Hwnd);
+	HCURSOR cursor = LoadCursor(0, IDC_ARROW);
+	SetCursor(cursor);
+	m_Graphics = new Graphics();
+	m_Graphics->Init(m_Hwnd);
+
 
 	SetVSync(true);
 }
 
 void Window::Shutdown()
 {
+	m_Graphics->Shutdown();
 	DestroyWindow(m_Hwnd);
 }
 
@@ -229,6 +236,7 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 		const POINTS pt = MAKEPOINTS(lParam);
 
+
 		if (pt.x >= 0 && pt.x <= (int)m_Data.Width && pt.y >= 0 && pt.y <= (int)m_Data.Height)
 		{
 			input.OnMouseMove(pt.x, pt.y);
@@ -272,9 +280,18 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 
+	case WM_MOUSEMOVE:
+	{
+		const POINTS pt = MAKEPOINTS(lParam);
+
+		m_Graphics->OnMouseMove(wParam, pt.x, pt.y);
+		break;
+	}
+
 	case WM_LBUTTONDOWN:
 	{
 		const POINTS pt = MAKEPOINTS(lParam);
+		m_Graphics->OnMouseDown(wParam, pt.x, pt.y);
 		input.OnLeftPressed();
 
 		SetForegroundWindow(hWnd);
@@ -312,7 +329,7 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		const POINTS pt = MAKEPOINTS(lParam);
 		input.OnLeftReleased();
-
+		m_Graphics->OnMouseUp();
 		if (pt.x < 0 || pt.x >(int)m_Data.Width || pt.y < 0 || pt.y >(int)m_Data.Height)
 		{
 			ReleaseCapture();
@@ -389,7 +406,7 @@ LRESULT Window::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	}
-	}
 
+	}
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
